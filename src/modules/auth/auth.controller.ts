@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Headers, Get, Param } from '@nestjs/common';
+import { Controller, Post, Body, Headers, Get, Param, Logger } from '@nestjs/common';
 import { AuthService } from './auth.service';
 
 @Controller('auth')
@@ -17,8 +17,9 @@ export class AuthController {
 
   @Post('verify')
   async verifyToken(@Headers('Authorization') authHeader: string) {
-    const token = authHeader?.split(' ')[1];
+    const token = authHeader.replace('Bearer ', '').trim();
     if (!token) throw new Error('No token provided');
+    console.log('Token:', token);
     return this.authService.verifyToken(token);
   }
 

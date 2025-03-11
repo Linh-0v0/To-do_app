@@ -1,11 +1,11 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Auth } from 'firebase/auth';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import * as admin from 'firebase-admin';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly firebaseAuth: Auth) {}
+  constructor(@Inject('FIREBASE_AUTH') private firebaseAuth: Auth) {}
 
   /**
    * Sign up a new user with email and password
