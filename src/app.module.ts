@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { FirebaseClientModule } from './modules/firebase/firebase-client.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { FirebaseAdminModule } from './modules/firebase/firebase-admin.module';
+// import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
   imports: [
@@ -10,6 +11,7 @@ import { FirebaseAdminModule } from './modules/firebase/firebase-admin.module';
     FirebaseClientModule, // ✅ Use Firebase Client SDK
     FirebaseAdminModule, // ✅ Use Firebase Admin SDK
     AuthModule,
+    // PrismaModule,
   ],
 })
 export class AppModule {}

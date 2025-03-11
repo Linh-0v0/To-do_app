@@ -14,18 +14,43 @@ datasource db {
 }
 
 model User {
-  id       String  @id @default(uuid())
-  email    String  @unique
-  username String?
+  id        String  @id
+  email     String  @unique
   createdAt DateTime @default(now())
+
+  tasks      Task[]  // One user can own many tasks
+  taggedTasks TaskTaggedUsers[] // Fix: Define the opposite relation
 }
 
 model Task {
-  id          String  @id @default(uuid())
-  userId      String
-  title       String
+  id        String  @id @default(uuid())
+  userId    String  
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade) 
+  title     String
   description String?
-  status      Boolean @default(false)
-  priority    Int @default(0)
-  dueDate     DateTime?
+  status    Boolean @default(false)
+  priority  Int     @default(0)
+  dueDate   DateTime?
+  reminder  DateTime?
+  repeatType RepeatType @default(none)
+  taggedUsers TaskTaggedUsers[]
+}
+
+model TaskTaggedUsers {
+  taskId String @map("task_id")
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, userId]) // ✅ Composite Primary Key
+}
+
+enum RepeatType {
+  none
+  daily
+  weekly
+  monthly
+  yearly
+  custom
 }

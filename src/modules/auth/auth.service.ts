@@ -1,11 +1,13 @@
 import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Auth } from 'firebase/auth';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { PrismaService } from 'src/prisma/prisma.service';
 import * as admin from 'firebase-admin';
 
 @Injectable()
 export class AuthService {
-  constructor(@Inject('FIREBASE_AUTH') private firebaseAuth: Auth) {}
+  constructor(@Inject('FIREBASE_AUTH') private firebaseAuth: Auth,
+  private prisma: PrismaService) {}
 
   /**
    * Sign up a new user with email and password
@@ -13,7 +15,27 @@ export class AuthService {
   async signUp(email: string, password: string) {
     try {
       const userCredential = await createUserWithEmailAndPassword(this.firebaseAuth, email, password);
-      return userCredential.user;
+      const firebaseUser = userCredential.user;
+
+      if (!firebaseUser.email) {
+        throw new UnauthorizedException('Email is required but not provided by Firebase.');
+      }
+
+      // Save the user in PostgreSQL using Prisma
+      const newUser = await this.prisma.user.create({
+        data: {
+          id: firebaseUser.uid, // Firebase UID as Primary Key
+          email: firebaseUser.email,
+          createdAt: new Date(),
+        },
+      });
+
+      return {
+        message: 'User registered successfully',
+        user: firebaseUser,
+        userdb: newUser,
+      };
+      // return firebaseUser;
     } catch (error) {
       throw new UnauthorizedException(error.message);
     }
