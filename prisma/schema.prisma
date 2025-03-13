@@ -16,9 +16,10 @@ datasource db {
 model User {
   id        String  @id
   email     String  @unique
+  username  String?
   createdAt DateTime @default(now())
-
-  tasks      Task[]  // One user can own many tasks
+  fcmToken  String?  // Store the user's FCM token
+  tasks     Task[]  // One user can own many tasks
   taggedTasks TaskTaggedUsers[] // Fix: Define the opposite relation
 }
 
