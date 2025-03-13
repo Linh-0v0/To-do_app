@@ -9,7 +9,7 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   /**
-   * ✅ Get current user info
+   * Get current user info
    */
   @Get('me')
   async getCurrentUser(@Req() req: CustomRequest) {
@@ -17,7 +17,7 @@ export class UserController {
   }
 
   /**
-   * ✅ Get a user by ID
+   * Get a user by ID
    */
   @Get(':id')
   async getUser(@Param('id') userId: string) {
@@ -25,7 +25,7 @@ export class UserController {
   }
 
   /**
-   * ✅ Update a user (e.g., update username, FCM token)
+   * Update a user (e.g., update username, FCM token)
    */
   @Patch('me')
   async updateUser(@Req() req: CustomRequest, @Body() updateData: { username?: string; fcmToken?: string }) {
@@ -33,7 +33,7 @@ export class UserController {
   }
 
   /**
-   * ✅ Delete the current user
+   * Delete the current user
    */
   @Delete('me')
   async deleteUser(@Req() req: CustomRequest) {

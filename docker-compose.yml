@@ -13,19 +13,32 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data # Persistent storage
 
+  redis:
+    image: redis:latest
+    container_name: redis_container
+    restart: always
+    ports:
+      - "6379:6379" # Expose Redis for BullMQ
+    command: redis-server --save 60 1 --loglevel warning #save data to disk every 60 seconds if at least 1 change is made.
+    volumes:
+      - redisdata:/data # Persistent storage for Redis
+
   backend:
     build: .
     ports:
       - "3000:3000"
     depends_on:
       - db
-    # environment:
-    #   DATABASE_URL: "postgresql://user:password@db:5432/todo_db"
+      - redis # Ensure Redis is started before backend
     env_file:
       - .env
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     volumes:
       - .:/app
     command: npm run start
 
 volumes:
   pgdata:
+  redisdata: # Add Redis storage
