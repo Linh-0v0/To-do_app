@@ -15,16 +15,16 @@ export class AuthController {
     return this.authService.signIn(body.email, body.password);
   }
 
-  @Post('verify')
-  async verifyToken(@Headers('Authorization') authHeader: string) {
-    const token = authHeader.replace('Bearer ', '').trim();
-    if (!token) throw new Error('No token provided');
-    console.log('Token:', token);
-    return this.authService.verifyToken(token);
-  }
+  // @Post('verify')
+  // async verifyToken(@Headers('Authorization') authHeader: string) {
+  //   const token = authHeader.replace('Bearer ', '').trim();
+  //   if (!token) throw new Error('No token provided');
+  //   console.log('Token:', token);
+  //   return this.authService.verifyToken(token);
+  // }
 
-  @Get('user/:uid')
-  async getUser(@Param('uid') uid: string) {
-    return this.authService.getUser(uid);
-  }
+  // @Get('user/:uid')
+  // async getUser(@Param('uid') uid: string) {
+  //   return this.authService.getUser(uid);
+  // }
 }

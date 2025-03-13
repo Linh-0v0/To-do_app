@@ -2,7 +2,7 @@ import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Auth } from 'firebase/auth';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { PrismaService } from 'src/prisma/prisma.service';
-import * as admin from 'firebase-admin';
+// import * as admin from 'firebase-admin';
 
 @Injectable()
 export class AuthService {
@@ -56,23 +56,24 @@ export class AuthService {
   /**
    * Verify the Firebase token sent by the frontend
    */
-  async verifyToken(idToken: string) {
-    try {
-      const decodedToken = await admin.auth().verifyIdToken(idToken);
-      return decodedToken;
-    } catch (error) {
-      throw new UnauthorizedException('Invalid token');
-    }
-  }
+  // // in auth.guard.ts, this will be delete later
+  // async verifyToken(idToken: string) {
+  //   try {
+  //     const decodedToken = await admin.auth().verifyIdToken(idToken);
+  //     return decodedToken;
+  //   } catch (error) {
+  //     throw new UnauthorizedException('Invalid token');
+  //   }
+  // }
 
   /**
    * Get user details from Firebase UID
    */
-  async getUser(uid: string) {
-    try {
-      return await admin.auth().getUser(uid);
-    } catch (error) {
-      throw new UnauthorizedException('User not found');
-    }
-  }
+  // async getUser(uid: string) {
+  //   try {
+  //     return await admin.auth().getUser(uid);
+  //   } catch (error) {
+  //     throw new UnauthorizedException('User not found');
+  //   }
+  // }
 }
