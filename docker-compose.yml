@@ -18,7 +18,7 @@ services:
     container_name: redis_container
     restart: always
     ports:
-      - "6379:6379" # Expose Redis for BullMQ
+      - "6380:6379" # Expose Redis for BullMQ
     command: redis-server --save 60 1 --loglevel warning #save data to disk every 60 seconds if at least 1 change is made.
     volumes:
       - redisdata:/data # Persistent storage for Redis

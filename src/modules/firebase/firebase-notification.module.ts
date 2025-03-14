@@ -1,9 +1,24 @@
-import { Module, Global } from '@nestjs/common';
+import { Module } from '@nestjs/common';
+import { BullModule } from '@nestjs/bullmq';
 import { FirebaseNotificationService } from './firebase-notification.service';
+import { FirebaseNotificationProcessor } from './firebase-notification.processor';
 
-@Global()
 @Module({
-  providers: [FirebaseNotificationService],
-  exports: [FirebaseNotificationService], // ✅ Make it available for other modules
+  imports: [
+    BullModule.forRoot({
+      connection: {
+        host: process.env.REDIS_HOST || 'localhost',
+        port: Number(process.env.REDIS_PORT) || 6379,
+      },
+    }),
+    BullModule.registerQueue({
+      name: 'notificationQueue',
+    }),
+  ],
+  providers: [
+    FirebaseNotificationService, //  Handles sending notifications
+    FirebaseNotificationProcessor, //  Processes BullMQ jobs
+  ],
+  exports: [FirebaseNotificationService],
 })
 export class FirebaseNotificationModule {}

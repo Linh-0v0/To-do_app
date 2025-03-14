@@ -47,10 +47,18 @@ export class AuthService {
   async signIn(email: string, password: string) {
     try {
       const userCredential = await signInWithEmailAndPassword(this.firebaseAuth, email, password);
+      
       return userCredential.user;
     } catch (error) {
       throw new UnauthorizedException(error.message);
     }
+  }
+  
+  async updateFcmToken(userId: string, fcmToken: string) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { fcmToken },
+    });
   }
 
   /**
