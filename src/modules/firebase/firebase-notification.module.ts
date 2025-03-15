@@ -7,7 +7,7 @@ import { FirebaseNotificationProcessor } from './firebase-notification.processor
   imports: [
     BullModule.forRoot({
       connection: {
-        host: process.env.REDIS_HOST || 'localhost',
+        host: process.env.REDIS_HOST || 'redis_container',
         port: Number(process.env.REDIS_PORT) || 6379,
       },
     }),
@@ -19,6 +19,6 @@ import { FirebaseNotificationProcessor } from './firebase-notification.processor
     FirebaseNotificationService, //  Handles sending notifications
     FirebaseNotificationProcessor, //  Processes BullMQ jobs
   ],
-  exports: [FirebaseNotificationService],
+  exports: [FirebaseNotificationService, BullModule],
 })
 export class FirebaseNotificationModule {}

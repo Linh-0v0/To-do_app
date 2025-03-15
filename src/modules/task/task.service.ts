@@ -6,10 +6,8 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateTaskDto, UpdateTaskDto } from '../dto/task.dto';
-import { FirebaseNotificationService } from '../firebase/firebase-notification.service';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { notificationQueue } from '../firebase/notification.queue';
 
 @Injectable()
 export class TaskService {
@@ -114,7 +112,9 @@ export class TaskService {
       userId,
       fcmToken: user.fcmToken,
       title: task.title,
-    }, { delay });
+    }, { delay,
+      attempts: 3,
+     });
 
     console.log(`✅ Reminder job added! Scheduled in: ${delay}ms`);
   }
