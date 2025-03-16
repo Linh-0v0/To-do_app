@@ -1,25 +1,3 @@
-// import { Processor, Process } from '@nestjs/bullmq';
-// import { Job } from 'bullmq';
-// import { FirebaseNotificationService } from './firebase-notification.service';
-
-// @Processor('notificationQueue')
-// export class FirebaseNotificationProcessor {
-//   constructor(private firebaseNotificationService: FirebaseNotificationService) {}
-
-//   @Process()
-//   async handleNotification(job: Job) {
-//     const { fcmToken, title } = job.data;
-//     console.log(`🔔 Sending reminder for task: "${title}"`);
-
-//     await this.firebaseNotificationService.sendNotification(
-//       fcmToken,
-//       `Reminder: ${title}`,
-//       `Don't forget to complete "${title}".`
-//     );
-
-//     console.log(`✅ Notification for "${title}" sent successfully.`);
-//   }
-// }
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { WorkerHost, OnWorkerEvent, Processor } from '@nestjs/bullmq';
 import { Job } from 'bullmq';

@@ -2,6 +2,7 @@ import { Module, Global } from '@nestjs/common';
 import * as admin from 'firebase-admin';
 import { ConfigService } from '@nestjs/config';
 import { FirebaseNotificationService } from './firebase-notification.service';
+
 @Global()
 @Module({
   providers: [

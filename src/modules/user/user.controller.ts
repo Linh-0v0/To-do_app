@@ -1,12 +1,12 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, Req } from '@nestjs/common';
 import { UserService } from './user.service';
-import { AuthGuard } from '../../common/guards/auth.guard';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CustomRequest } from '../../common/interfaces/custom-request.interface';
 
 @Controller('users')
-@UseGuards(AuthGuard) // ✅ Requires authentication
+@UseGuards(JwtAuthGuard) // ✅ Requires authentication
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(private readonly userService: UserService) { }
 
   /**
    * Get current user info

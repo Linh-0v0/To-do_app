@@ -1,14 +1,14 @@
 import { Controller, Post, Get, Patch, Delete, Body, Param, Req, UseGuards } from '@nestjs/common';
 import { TaskService } from './task.service';
 import { CreateTaskDto, UpdateTaskDto } from '../dto/task.dto';
-import { AuthGuard } from '../../common/guards/auth.guard';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { Request } from 'express';
 import { CustomRequest } from '../../common/interfaces/custom-request.interface';
 
 @Controller('tasks')
-@UseGuards(AuthGuard) // ✅ AuthGuard automatically sets req.user
+@UseGuards(JwtAuthGuard) // ✅ JwtAuthGuard automatically sets req.user
 export class TaskController {
-  constructor(private readonly taskService: TaskService) {}
+  constructor(private readonly taskService: TaskService) { }
 
   @Post()
   async createTask(@Req() req: CustomRequest, @Body() createTaskDto: CreateTaskDto) {

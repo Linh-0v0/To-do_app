@@ -27,12 +27,12 @@ export class UserService {
   /**
    * Create a user (Stores in PostgreSQL)
    */
-  async createUser(userId: string, email: string, username?: string) {
+  async createUser(email: string, password: string, username?: string) {
     return await this.prisma.user.create({
         data: { 
-            id: userId, 
             email, 
-            ...(username && { username }) //Only add if username exists
+            password,
+            ...(username && { username }), //Only add if username exists
           },
     });
   }

@@ -11,12 +11,12 @@ import { FirebaseNotificationModule } from './modules/firebase/firebase-notifica
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }), // Loads .env globally
-    FirebaseClientModule, // Use Firebase Client SDK
+    // FirebaseClientModule, // Use Firebase Client SDK
     FirebaseAdminModule, // Use Firebase Admin SDK
-    FirebaseNotificationModule,
+    // FirebaseNotificationModule,
     AuthModule,
     UserModule,
-    TaskModule,
+    // TaskModule,
     // PrismaModule,
   ],
 })
