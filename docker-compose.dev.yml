@@ -37,7 +37,7 @@ services:
       - .:/app  # ✅ Bind mount your local folder
     environment:
       REDIS_HOST: redis
-      REDIS_PORT: 6379
+      REDIS_PORT: 6380
 
 
 volumes:

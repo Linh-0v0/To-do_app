@@ -9,6 +9,7 @@ import { CreateTaskDto, UpdateTaskDto } from '../dto/task.dto';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { getNextOccurrence } from 'src/common/utils/date.util';
+import { CustomRequest } from 'src/common/interfaces/custom-request.interface';
 
 @Injectable()
 export class TaskService {
@@ -17,11 +18,14 @@ export class TaskService {
     private readonly prisma: PrismaService,
     @InjectQueue('notificationQueue') private notificationQueue: Queue,
   ) { }
+  
 
   /**
    * Create a new task
    */
-  async createTask(userId: string, createTaskDto: CreateTaskDto) {
+  async createTask(request: CustomRequest, createTaskDto: CreateTaskDto) {
+    const user = request.user;
+    const userId = user.provider == 'firebase' ? user.uid : user.sub;
     const task = await this.prisma.task.create({
       data: {
         userId,
@@ -37,16 +41,19 @@ export class TaskService {
   /**
    * Get all tasks for the authenticated user
    */
-  async getUserTasks(userId: string) {
-    return this.prisma.task.findMany({
+  async getUserTasks(user: CustomRequest["user"]) {
+    const userId = user.provider == 'firebase' ? user.uid : user.sub;
+    const task = this.prisma.task.findMany({
       where: { userId },
     });
+    return task;
   }
 
   /**
    * Get a single task (only if owned by user)
    */
-  async getTaskById(userId: string, taskId: string) {
+  async getTaskById(user: CustomRequest["user"], taskId: string) {
+    const userId = user.provider == 'firebase' ? user.uid : user.sub;
     const task = await this.prisma.task.findUnique({ where: { id: taskId } });
 
     if (!task) throw new NotFoundException('Task not found');
@@ -59,10 +66,11 @@ export class TaskService {
  * Update a task (only if owned by user)
  */
   async updateTask(
-    userId: string,
+    user: CustomRequest["user"],
     taskId: string,
     updateTaskDto: UpdateTaskDto,
   ) {
+    const userId = user.provider == 'firebase' ? user.uid : user.sub;
     const existingTask = await this.prisma.task.findUnique({
       where: { id: taskId, userId },
     });
@@ -91,22 +99,6 @@ export class TaskService {
       await this.scheduleReminder(userId, updatedTask);
     }
 
-    // //  If repeatType is changed, remove old scheduled job
-    // if (updateTaskDto.repeatType && updateTaskDto.repeatType !== existingTask.repeatType) {
-    //   await this.removeScheduledReminder(taskId);
-    // }
-
-    // //  Update task in DB
-    // const updatedTask = await this.prisma.task.update({
-    //   where: { id: taskId, userId },
-    //   data: updateTaskDto,
-    // });
-
-    // //  Re-schedule notification if reminder or repeat changed
-    // if (updatedTask.reminder || updatedTask.repeatType) {
-    //   await this.scheduleReminder(userId, updatedTask);
-    // }
-
     return updatedTask;
   }
 
@@ -114,18 +106,18 @@ export class TaskService {
   /**
    * Delete a task (only if owned by user)
    */
-  async deleteTask(userId: string, taskId: string) {
+  async deleteTask(user: CustomRequest["user"], taskId: string) {
+    const userId = user.provider == 'firebase' ? user.uid : user.sub;
     const task = await this.getTaskById(userId, taskId);
 
-    return this.prisma.task.delete({
-      where: { id: task.id },
-    });
+    return "Task deleted successfully";
   }
 
 /**
  * Schedule a notification for a task reminder (Supports repeat & one-time reminders)
  */
 async scheduleReminder(userId: string, task: any) {
+  console.log("scheduleRemider userId:", userId)
   const user = await this.prisma.user.findUnique({
     where: { id: userId },
     select: { fcmToken: true },
@@ -137,10 +129,10 @@ async scheduleReminder(userId: string, task: any) {
   }
 
   // 🔥 Remove existing scheduled job (prevents duplicates)
-  await this.removeScheduledReminder(task.id);
+  // await this.removeScheduledReminder(task.id);
 
   // ✅ If no repeat, just schedule a one-time reminder (due date)
-  if (!task.repeatType || task.repeatType === 'none') {
+  if (!task.repeatType || task.repeatType == 'none') {
     const jobTime = new Date(task.reminder).getTime();
     const currentTime = Date.now();
     const delay = jobTime - currentTime;
@@ -165,47 +157,47 @@ async scheduleReminder(userId: string, task: any) {
   }
 
   // 🔥 Handle REPEATING Reminders
-  if (task.repeatType === 'custom' && task.repeatDays) {
-    const repeatDaysArray = task.repeatDays.split(','); // Example: "Mo,We,Fr"
+  // if (task.repeatType === 'custom' && task.repeatDays) {
+  //   const repeatDaysArray = task.repeatDays.split(','); // Example: "Mo,We,Fr"
 
-    for (const day of repeatDaysArray) {
-      const nextDate = getNextOccurrence(day);
-      if (nextDate) {
-        await this.notificationQueue.add(
-          'sendReminder',
-          {
-            userId,
-            fcmToken: user.fcmToken,
-            title: task.title,
-          },
-          {
-            delay: nextDate.getTime() - Date.now(),
-            repeat: { every: 7 * 24 * 60 * 60 * 1000 }, // Repeat weekly
-            attempts: 3,
-          },
-        );
-        console.log(`✅ Custom repeat scheduled for "${task.title}" on ${nextDate}`);
-      }
-    }
-  } else {
-    // ✅ Handle standard repeat types (daily, weekly, monthly, yearly)
-    const repeatOpts = this.getRepeatOptions(task);
-    await this.notificationQueue.add(
-      'sendReminder',
-      {
-        userId,
-        fcmToken: user.fcmToken,
-        title: task.title,
-      },
-      {
-        delay: new Date(task.reminder).getTime() - Date.now(),
-        repeat: repeatOpts,
-        attempts: 3,
-      },
-    );
+  //   for (const day of repeatDaysArray) {
+  //     const nextDate = getNextOccurrence(day);
+  //     if (nextDate) {
+  //       await this.notificationQueue.add(
+  //         'sendReminder',
+  //         {
+  //           userId,
+  //           fcmToken: user.fcmToken,
+  //           title: task.title,
+  //         },
+  //         {
+  //           delay: nextDate.getTime() - Date.now(),
+  //           repeat: { every: 7 * 24 * 60 * 60 * 1000 }, // Repeat weekly
+  //           attempts: 3,
+  //         },
+  //       );
+  //       console.log(`✅ Custom repeat scheduled for "${task.title}" on ${nextDate}`);
+  //     }
+  //   }
+  // } else {
+  //   // ✅ Handle standard repeat types (daily, weekly, monthly, yearly)
+  //   const repeatOpts = this.getRepeatOptions(task);
+  //   await this.notificationQueue.add(
+  //     'sendReminder',
+  //     {
+  //       userId,
+  //       fcmToken: user.fcmToken,
+  //       title: task.title,
+  //     },
+  //     {
+  //       delay: new Date(task.reminder).getTime() - Date.now(),
+  //       repeat: repeatOpts,
+  //       attempts: 3,
+  //     },
+  //   );
 
-    console.log(`✅ Recurring reminder scheduled for "${task.title}" with repeat type: ${task.repeatType}`);
-  }
+  //   console.log(`✅ Recurring reminder scheduled for "${task.title}" with repeat type: ${task.repeatType}`);
+  // }
 }
 
 
@@ -283,40 +275,4 @@ private calculateNextReminder(currentDate: Date, repeatType: string): number {
 
   return nextDate.getTime();
 }
-
-
-  /**
-   *  Runs every minute to check for reminders and send notifications
-   */
-  // @Cron(CronExpression.EVERY_MINUTE) //  Runs every minute
-  // async checkForReminders() {
-  //   this.logger.log('🔍 Checking for due reminders...');
-
-  //   const now = new Date();
-  //   const tasks = await this.prisma.task.findMany({
-  //     where: {
-  //       reminder: {
-  //         lte: now, // Get tasks where reminder time has passed
-  //       },
-  //       status: false, //  Only notify for incomplete tasks
-  //     },
-  //     include: { user: { select: { fcmToken: true } } },
-  //   });
-
-  //   for (const task of tasks) {
-  //     if (!task.user.fcmToken) continue; //  Skip if user has no FCM token
-
-  //     await this.firebaseNotificationService.sendNotification(
-  //       task.user.fcmToken,
-  //       `Reminder: ${task.title}`,
-  //       `Don't forget to complete "${task.title}".`
-  //     );
-
-  //     //  Mark the reminder as sent (optional, based on your logic)
-  //     await this.prisma.task.update({
-  //       where: { id: task.id },
-  //       data: { reminder: null }, // Prevent duplicate notifications
-  //     });
-  //   }
-  // }
 }

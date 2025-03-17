@@ -76,20 +76,6 @@ export class AuthService {
     return this.generateTokens(user.id, user.email);
   }
 
-  // private generateTokens(userId: string, email: string) {
-  //   const accessToken = this.jwtService.sign(
-  //     { sub: userId, email },
-  //     { expiresIn: '15m' }, // Access Token expires in 15 minutes
-  //   );
-
-  //   const refreshToken = this.jwtService.sign(
-  //     { sub: userId },
-  //     { expiresIn: '7d' }, // Refresh Token expires in 7 days
-  //   );
-
-  //   return { accessToken, refreshToken };
-  // }
-
   async generateTokens(userId: string, email: string) {
     const accessToken = this.jwtService.sign(
       { sub: userId, email },
@@ -109,21 +95,6 @@ export class AuthService {
 
     return { accessToken, refreshToken };
   }
-
-  // async refreshAccessToken(refreshToken: string) {
-  //   try {
-  //     const decoded = this.jwtService.verify(refreshToken);
-  //     const user = await this.prisma.user.findUnique({ where: { id: decoded.sub } });
-
-  //     if (!user) {
-  //       throw new UnauthorizedException('Invalid refresh token');
-  //     }
-
-  //     return this.generateTokens(user.id, user.email);
-  //   } catch (error) {
-  //     throw new UnauthorizedException('Invalid refresh token');
-  //   }
-  // }
 
   async refreshAccessToken(refreshToken: string) {
     try {
@@ -203,7 +174,7 @@ export class AuthService {
 
       // ✅ Check if user exists in PostgreSQL, if not, create a new entry
       let user = await this.prisma.user.findUnique({
-        where: { id: userCredential.uid },
+        where: { firebaseUid: userCredential.uid },
       });
 
       if (!user) {
@@ -266,12 +237,6 @@ export class AuthService {
     }
   }
 
-  // // ✅ Generate JWT Token for Manual Auth
-  // private generateToken(userId: string, email: string) {
-  //   const payload = { sub: userId, email };
-  //   return { accessToken: this.jwtService.sign(payload) };
-  // }
-
   async updateFcmToken(userId: string, fcmToken: string) {
     return this.prisma.user.update({
       where: { id: userId },
@@ -279,28 +244,3 @@ export class AuthService {
     });
   }
 }
-
-//   /**
-//    * Verify the Firebase token sent by the frontend
-//    */
-//   // // in auth.guard.ts, this will be delete later
-//   // async verifyToken(idToken: string) {
-//   //   try {
-//   //     const decodedToken = await admin.auth().verifyIdToken(idToken);
-//   //     return decodedToken;
-//   //   } catch (error) {
-//   //     throw new UnauthorizedException('Invalid token');
-//   //   }
-//   // }
-
-//   /**
-//    * Get user details from Firebase UID
-//    */
-//   // async getUser(uid: string) {
-//   //   try {
-//   //     return await admin.auth().getUser(uid);
-//   //   } catch (error) {
-//   //     throw new UnauthorizedException('User not found');
-//   //   }
-//   // }
-// }

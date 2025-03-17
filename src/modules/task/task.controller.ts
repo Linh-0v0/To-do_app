@@ -12,26 +12,26 @@ export class TaskController {
 
   @Post()
   async createTask(@Req() req: CustomRequest, @Body() createTaskDto: CreateTaskDto) {
-    return this.taskService.createTask(req.user.uid, createTaskDto);
+    return this.taskService.createTask(req, createTaskDto);
   }
 
   @Get()
   async getUserTasks(@Req() req: CustomRequest) {
-    return this.taskService.getUserTasks(req.user.uid);
+    return this.taskService.getUserTasks(req.user);
   }
 
   @Get(':taskId')
   async getTaskById(@Req() req: CustomRequest, @Param('taskId') taskId: string) {
-    return this.taskService.getTaskById(req.user.uid, taskId);
+    return this.taskService.getTaskById(req.user, taskId);
   }
 
   @Patch(':taskId')
   async updateTask(@Req() req: CustomRequest, @Param('taskId') taskId: string, @Body() updateTaskDto: UpdateTaskDto) {
-    return this.taskService.updateTask(req.user.uid, taskId, updateTaskDto);
+    return this.taskService.updateTask(req.user, taskId, updateTaskDto);
   }
 
   @Delete(':taskId')
   async deleteTask(@Req() req: CustomRequest, @Param('taskId') taskId: string) {
-    return this.taskService.deleteTask(req.user.uid, taskId);
+    return this.taskService.deleteTask(req.user, taskId);
   }
 }

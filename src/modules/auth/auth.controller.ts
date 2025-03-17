@@ -54,22 +54,8 @@ export class AuthController {
   @Patch('update-fcm-token')
   @UseGuards(JwtAuthGuard)
   async updateFcmToken(@Req() req: CustomRequest, @Body('fcmToken') fcmToken: string) {
-    const userId = req.user.uid; // ✅ Firebase UID from request
+    const user = req.user;
+    const userId = user.provider == 'firebase' ? user.uid : user.sub;
     return this.authService.updateFcmToken(userId, fcmToken);
   }
 }
-
-
-//   // @Post('verify')
-//   // async verifyToken(@Headers('Authorization') authHeader: string) {
-//   //   const token = authHeader.replace('Bearer ', '').trim();
-//   //   if (!token) throw new Error('No token provided');
-//   //   console.log('Token:', token);
-//   //   return this.authService.verifyToken(token);
-//   // }
-
-//   // @Get('user/:uid')
-//   // async getUser(@Param('uid') uid: string) {
-//   //   return this.authService.getUser(uid);
-//   // }
-// }
