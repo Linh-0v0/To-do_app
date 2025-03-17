@@ -16,10 +16,12 @@ datasource db {
 
 model User {
   id        String  @id @default(uuid())
+  firebaseUid  String? @unique  // Store Firebase UID (if applicable)
   email     String  @unique
   username  String?
-  password  String //Store hashed password
+  password  String? //Store hashed password
   createdAt DateTime @default(now())
+  refreshToken String?
   fcmToken  String?  // Store the user's FCM token
   tasks     Task[]  // One user can own many tasks
   taggedTasks TaskTaggedUsers[] // Fix: Define the opposite relation

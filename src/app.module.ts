@@ -6,18 +6,18 @@ import { FirebaseAdminModule } from './modules/firebase/firebase-admin.module';
 import { TaskModule } from './modules/task/task.module';
 import { UserModule } from './modules/user/user.module';
 import { FirebaseNotificationModule } from './modules/firebase/firebase-notification.module';
-// import { PrismaModule } from './prisma/prisma.module';
+import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }), // Loads .env globally
-    // FirebaseClientModule, // Use Firebase Client SDK
+    FirebaseClientModule, // Use Firebase Client SDK
     FirebaseAdminModule, // Use Firebase Admin SDK
-    // FirebaseNotificationModule,
+    FirebaseNotificationModule,
     AuthModule,
     UserModule,
-    // TaskModule,
-    // PrismaModule,
+    TaskModule,
+    PrismaModule,
   ],
 })
 export class AppModule {}

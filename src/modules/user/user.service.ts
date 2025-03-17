@@ -1,4 +1,4 @@
-import { Injectable, Inject, NotFoundException } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException, ForbiddenException } from '@nestjs/common';
 import * as admin from 'firebase-admin';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -10,7 +10,7 @@ export class UserService {
   ) {}
 
   /**
-   * Get a user from the database
+   * Get a user from the database (Supports Firebase & Manual users)
    */
   async getUser(userId: string) {
     const user = await this.prisma.user.findUnique({
@@ -24,40 +24,67 @@ export class UserService {
     return user;
   }
 
-  /**
-   * Create a user (Stores in PostgreSQL)
+  // /**
+  //  * Create a user (Stores in PostgreSQL)
+  //  */
+  // async createUser(email: string, password: string, username?: string) {
+  //   return await this.prisma.user.create({
+  //       data: { 
+  //           email, 
+  //           password,
+  //           ...(username && { username }), //Only add if username exists
+  //         },
+  //   });
+  // }
+
+ /**
+   * ✅ Update a user (username, FCM token, password for manual users)
    */
-  async createUser(email: string, password: string, username?: string) {
-    return await this.prisma.user.create({
-        data: { 
-            email, 
-            password,
-            ...(username && { username }), //Only add if username exists
-          },
-    });
+ async updateUser(
+  userId: string,
+  data: Partial<{ username: string; fcmToken: string; password?: string }>,
+) {
+  const user = await this.prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!user) {
+    throw new NotFoundException('User not found');
   }
 
-  /**
-   * Update a user (e.g., change username, FCM token)
-   */
-  async updateUser(userId: string, data: Partial<{ username: string; fcmToken: string }>) {
-    return await this.prisma.user.update({
-      where: { id: userId },
-      data,
-    });
+  // 🔹 Prevent Firebase users from updating their password manually
+  if (user.firebaseUid && data.password) {
+    throw new ForbiddenException(
+      'Cannot update password for Firebase-authenticated users.',
+    );
   }
 
+  return await this.prisma.user.update({
+    where: { id: userId },
+    data,
+  });
+}
   /**
-   * Delete a user from PostgreSQL & Firebase Authentication
+   * ✅ Delete a user from PostgreSQL & Firebase Authentication if applicable
    */
   async deleteUser(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // 🔹 If user was created with Firebase, also delete from Firebase Authentication
+    if (user.firebaseUid) {
+      await admin.auth().deleteUser(user.firebaseUid);
+    }
+
     // Delete from PostgreSQL
     await this.prisma.user.delete({
       where: { id: userId },
     });
-
-    // Delete from Firebase Authentication
-    await admin.auth().deleteUser(userId);
 
     return { message: 'User deleted successfully' };
   }

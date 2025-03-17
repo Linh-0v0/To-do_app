@@ -1,10 +1,13 @@
-import { Controller, Post, Body, UseGuards, Request } from '@nestjs/common';
+import { 
+  Controller, Post, Body, Patch, Get, UseGuards, Request, Req 
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { CustomRequest } from '../../common/interfaces/custom-request.interface';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) { }
+  constructor(private readonly authService: AuthService) {}
 
   @Post('signup')
   async signUp(@Body('email') email: string, @Body('password') password: string) {
@@ -16,41 +19,45 @@ export class AuthController {
     return this.authService.signIn(email, password);
   }
 
-  @Post('profile')
+  @Post('refresh-token')
+  async refreshAccessToken(@Body('refreshToken') refreshToken: string) {
+    return this.authService.refreshAccessToken(refreshToken);
+  }
+
+  // ✅ Firebase Authentication - Sign Up
+  @Post('firebase-signup')
+  async firebaseSignUp(@Body('email') email: string, @Body('password') password: string) {
+    return this.authService.firebaseSignUp(email, password);
+  }
+
+  // ✅ Firebase Authentication - Sign In
+  @Post('firebase-signin')
+  async firebaseSignIn(@Body('email') email: string, @Body('password') password: string) {
+    return this.authService.firebaseSignIn(email, password);
+  }
+
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  async logout(@Request() req) {
+    return this.authService.logout(req);
+  }
+  
+
+  // ✅ Get Profile (Protected Route)
+  @Get('profile')
   @UseGuards(JwtAuthGuard)
   async getProfile(@Request() req) {
-    return req.user;
+    return req.user; // ✅ Returns the authenticated user's data
+  }
+
+  // ✅ Update FCM Token for Firebase Cloud Messaging (Protected)
+  @Patch('update-fcm-token')
+  @UseGuards(JwtAuthGuard)
+  async updateFcmToken(@Req() req: CustomRequest, @Body('fcmToken') fcmToken: string) {
+    const userId = req.user.uid; // ✅ Firebase UID from request
+    return this.authService.updateFcmToken(userId, fcmToken);
   }
 }
-
-
-// import { Controller, Post, Body, Patch, Req, Headers, Get, Param, Logger, UseGuards } from '@nestjs/common';
-// import { AuthService } from './auth.service';
-// import { JwtAuthGuard } from 'src/common/guards/auth.guard';
-// import { CustomRequest } from 'src/common/interfaces/custom-request.interface';
-
-// @Controller('auth')
-// export class AuthController {
-//   constructor(private readonly authService: AuthService) {}
-
-//   @Post('signup')
-//   async signUp(@Body() body: { email: string; password: string }) {
-//     return this.authService.signUp(body.email, body.password);
-//   }
-
-//   @Post('login')
-//   async signIn(@Body() body: { email: string; password: string }) {
-//     return this.authService.signIn(body.email, body.password);
-//   }
-
-//    // 🔥 Manually update the FCM token for testing
-//    @Patch('update-fcm-token')
-//    @UseGuards(JwtAuthGuard) // ✅ Protect with Firebase Auth Guard
-//    async updateFcmToken(@Req() req: CustomRequest, @Body() body: { fcmToken: string }) {
-//      const userId = req.user.uid; // ✅ Get Firebase UID from request
-//      return this.authService.updateFcmToken(userId, body.fcmToken);
-//    }
-
 
 
 //   // @Post('verify')
