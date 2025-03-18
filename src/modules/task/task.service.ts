@@ -110,8 +110,7 @@ export class TaskService {
    * Delete a task (only if owned by user)
    */
   async deleteTask(user: CustomRequest['user'], taskId: string) {
-    const userId = user.provider == 'firebase' ? user.id : user.uid || user.sub;
-    const task = await this.getTaskById(userId, taskId);
+    const task = await this.getTaskById(user, taskId);
 
     return 'Task deleted successfully';
   }

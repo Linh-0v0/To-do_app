@@ -207,13 +207,13 @@ export class AuthService {
     try {
       console.log('provider: ', user.provider);
       const userId =
-        user.provider == 'firebase' ? user.id : user.uid || user.sub; // const provider = request.user.provider; // ✅ Determine provider automatically
+        user.provider == 'firebase' ? user.uid || user.sub : ""; // const provider = request.user.provider; // ✅ Determine provider automatically
       if (!userId) {
         throw new UnauthorizedException('User ID is missing in token');
       }
       // Check if the user exists in DB
       const userExists = await this.prisma.user.findUnique({
-        where: { firebaseUid: userId },
+        where: { firebaseUid: user.uid || user.sub },
       });
       if (!userExists) {
         throw new UnauthorizedException('User not found in database');

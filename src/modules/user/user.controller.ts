@@ -13,7 +13,7 @@ export class UserController {
    */
   @Get('me')
   async getCurrentUser(@Req() req: CustomRequest) {
-    return this.userService.getUser(req.user.uid);
+    return this.userService.getCurrentUser(req);
   }
 
   /**
@@ -29,7 +29,7 @@ export class UserController {
    */
   @Patch('me')
   async updateUser(@Req() req: CustomRequest, @Body() updateData: { username?: string; fcmToken?: string }) {
-    return this.userService.updateUser(req.user.uid, updateData);
+    return this.userService.updateUser(req, updateData);
   }
 
   /**
@@ -37,6 +37,6 @@ export class UserController {
    */
   @Delete('me')
   async deleteUser(@Req() req: CustomRequest) {
-    return this.userService.deleteUser(req.user.uid);
+    return this.userService.deleteUser(req);
   }
 }
