@@ -177,17 +177,22 @@ export class AuthService {
         where: { firebaseUid: userCredential.uid },
       });
 
+      const userCredentialInfo = await signInWithEmailAndPassword(
+        this.firebaseAuth,
+        email,
+        password,
+      );
       if (!user) {
         user = await this.prisma.user.create({
           data: {
-            id: userCredential.uid,
+            // id: userCredential.uid,
             email: userCredential.email || email,
             createdAt: new Date(),
           },
         });
       }
 
-      return { message: 'User signed in with Firebase', user };
+      return { message: 'User signed in with Firebase', userCredentialInfo };
     } catch (error) {
       throw new UnauthorizedException('Invalid Firebase credentials');
     }
@@ -201,8 +206,8 @@ export class AuthService {
     console.log('req.user:', request.user);
     try {
       console.log('provider: ', user.provider);
-      const userId = user.provider == 'firebase' ? user.uid : user.sub;
-      // const provider = request.user.provider; // ✅ Determine provider automatically
+      const userId =
+        user.provider == 'firebase' ? user.id : user.uid || user.sub; // const provider = request.user.provider; // ✅ Determine provider automatically
       if (!userId) {
         throw new UnauthorizedException('User ID is missing in token');
       }
@@ -233,7 +238,7 @@ export class AuthService {
       return { message: 'User logged out successfully' };
     } catch (error) {
       console.error('❌ Error during logout:', error);
-    throw new UnauthorizedException(error?.message || 'Failed to log out');
+      throw new UnauthorizedException(error?.message || 'Failed to log out');
     }
   }
 
