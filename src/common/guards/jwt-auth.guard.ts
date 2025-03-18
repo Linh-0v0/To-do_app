@@ -30,6 +30,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     }
 
     const token = authHeader.replace('Bearer ', '').trim();
+    console.log('Tokenn:', token);
 
     // 🔹 Try Firebase Authentication First
     try {

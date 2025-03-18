@@ -17,6 +17,7 @@ export class UserService {
 
   async getCurrentUser(request: CustomRequest) {
     const user = request.user;
+    console.log(request.user);
     console.log('createTask user:', user);
     const userId = user.provider == 'firebase' ? user.id : user.uid || user.sub;
 
@@ -34,21 +35,6 @@ export class UserService {
     }
 
     return userInfo;
-  }
-
-  /**
-   * Get a user from the database (Supports Firebase & Manual users)
-   */
-  async getUser(userId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-    });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    return user;
   }
 
   /**
@@ -85,27 +71,31 @@ export class UserService {
   /**
    * ✅ Delete a user from PostgreSQL & Firebase Authentication if applicable
    */
-  async deleteUser(request: CustomRequest) {
+  async deleteUser(request: CustomRequest): Promise<void> {
     const user = request.user;
-    console.log('createTask user:', user);
+    console.log('deleteUser user:', user);
+  
+    const userId = user.provider === 'firebase' ? user.id : user.uid || user.sub;
+  
     const userInfo = await this.prisma.user.findUnique({
-      where: { id: user.id },
+      where: { id: userId },
     });
-
+  
     if (!userInfo) {
       throw new NotFoundException('User not found');
     }
-
+  
     // 🔹 If user was created with Firebase, also delete from Firebase Authentication
     if (userInfo.firebaseUid) {
-      await admin.auth().deleteUser(user.uid || user.sub);
+      await admin.auth().deleteUser(user.uid || user.sub); // Delete from Firebase Auth
     }
-
-    // Delete from PostgreSQL
+  
+    // 🔹 Delete user from PostgreSQL
     await this.prisma.user.delete({
-      where: { id: user.id },
+      where: { id: userId },
     });
-
-    return { message: 'User deleted successfully' };
+  
+    // ✅ No return statement → Automatically responds with 204 No Content
   }
+  
 }

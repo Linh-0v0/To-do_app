@@ -4,12 +4,11 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
 import { Inject } from '@nestjs/common';
 import { Auth } from 'firebase/auth';
 import {
-  getAuth,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
 } from 'firebase/auth';
@@ -34,6 +33,7 @@ export class AuthService {
         'Email already registered manually. Please log in manually.',
       );
     }
+    console.log('after existing user')
 
     // ✅ Check if the email is already registered in Firebase
     try {
@@ -50,14 +50,22 @@ export class AuthService {
         );
       }
     }
+    console.log('after try catch')
 
+    let hashedPassword = '';
     // ✅ Hash the password for manual authentication
-    const hashedPassword = await bcrypt.hash(password, 10);
-
+    try {
+      hashedPassword = await bcrypt.hash(password, 10);
+    } catch (error) {
+      console.log(error);
+    }
+    
+    console.log('after hashed password')
     // ✅ Create a new user in PostgreSQL
     const user = await this.prisma.user.create({
       data: { email, password: hashedPassword },
     });
+    console.log('after create user in postgresql')
 
     return this.generateTokens(user.id, user.email);
   }
@@ -68,7 +76,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const passwordValid = await bcrypt.compare(password, user.password);
+    const passwordValid = await bcrypt.compare(password, user.password ?? '');
     if (!passwordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -200,7 +208,6 @@ export class AuthService {
   /**
    * Logout user - Firebase Authentication (Invalidate Session)
    */
-  // async logout(user: { provider: 'firebase' | 'manual'; uid?: string; sub?: string }) {
   async logout(request: CustomRequest) {
     const user = request.user;
     console.log('req.user:', request.user);

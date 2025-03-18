@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, Req, HttpCode } from '@nestjs/common';
 import { UserService } from './user.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CustomRequest } from '../../common/interfaces/custom-request.interface';
@@ -17,14 +17,6 @@ export class UserController {
   }
 
   /**
-   * Get a user by ID
-   */
-  @Get(':id')
-  async getUser(@Param('id') userId: string) {
-    return this.userService.getUser(userId);
-  }
-
-  /**
    * Update a user (e.g., update username, FCM token)
    */
   @Patch('me')
@@ -36,6 +28,7 @@ export class UserController {
    * Delete the current user
    */
   @Delete('me')
+  @HttpCode(204)
   async deleteUser(@Req() req: CustomRequest) {
     return this.userService.deleteUser(req);
   }

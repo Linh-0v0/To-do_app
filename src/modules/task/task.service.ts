@@ -8,7 +8,6 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateTaskDto, UpdateTaskDto } from '../dto/task.dto';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { getNextOccurrence } from 'src/common/utils/date.util';
 import { CustomRequest } from 'src/common/interfaces/custom-request.interface';
 
 @Injectable()
@@ -111,8 +110,7 @@ export class TaskService {
    */
   async deleteTask(user: CustomRequest['user'], taskId: string) {
     const task = await this.getTaskById(user, taskId);
-
-    return 'Task deleted successfully';
+    await this.prisma.task.delete({ where: { id: taskId } });
   }
 
   async scheduleReminder(userId: string, task: any) {
@@ -191,21 +189,6 @@ export class TaskService {
   /**
    * Get Repeat Options for BullMQ based on RepeatType
    */
-  // private getRepeatOptions(repeatType: string): any {
-  //   switch (repeatType) {
-  //     case 'daily':
-  //       return { every: 24 * 60 * 60 * 1000 }; // Every 24 hours
-  //     case 'weekly':
-  //       return { every: 7 * 24 * 60 * 60 * 1000 }; // Every 7 days
-  //     case 'monthly':
-  //       return { every: 30 * 24 * 60 * 60 * 1000 }; // Every 30 days
-  //     case 'yearly':
-  //       return { every: 365 * 24 * 60 * 60 * 1000 }; // Every 365 days
-  //     default:
-  //       return {}; // No repeat
-  //   }
-  // }
-
   private getRepeatOptions(repeatType: string): any {
     switch (repeatType) {
       case 'daily':

@@ -35,10 +35,6 @@ services:
       - .env
     volumes:
       - .:/app  # ✅ Bind mount your local folder
-    environment:
-      REDIS_HOST: redis
-      REDIS_PORT: 6380
-
 
 volumes:
   pgdata:
