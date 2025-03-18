@@ -57,5 +57,4 @@ enum RepeatType {
   weekly
   monthly
   yearly
-  custom
 }

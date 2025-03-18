@@ -13,6 +13,15 @@ export class FirebaseNotificationProcessor extends WorkerHost implements OnModul
   async process(job: Job): Promise<void> {
     const { fcmToken, title } = job.data;
     console.log(`🔔 Sending reminder for task: "${title}"`);
+    // 🔥 Log repeat job info
+  console.log(`🔔 Processing job: ${job.id}`);
+  console.log(`🔄 Repeat Key: ${job.opts.repeat?.key ?? 'None'}`);
+
+    // 🔥 Check if job is repeating
+    if (job.opts.repeat) {
+      console.log(`♻️ This is a repeating job for "${title}"`);
+    }
+  
 
     await this.firebaseNotificationService.sendNotification(
       fcmToken,

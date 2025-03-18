@@ -116,11 +116,9 @@ export class TaskService {
     return 'Task deleted successfully';
   }
 
-  /**
-   * Schedule a notification for a task reminder (Supports repeat & one-time reminders)
-   */
   async scheduleReminder(userId: string, task: any) {
-    console.log('scheduleRemider userId:', userId);
+    console.log('📅 scheduleReminder for user:', userId);
+
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { fcmToken: true },
@@ -134,10 +132,10 @@ export class TaskService {
     }
 
     // 🔥 Remove existing scheduled job (prevents duplicates)
-    // await this.removeScheduledReminder(task.id);
+    await this.removeScheduledReminder(task.id);
 
-    // ✅ If no repeat, just schedule a one-time reminder (due date)
-    if (!task.repeatType || task.repeatType == 'none') {
+    // ✅ One-time Reminder (No repeat)
+    if (!task.repeatType || task.repeatType === 'none') {
       const jobTime = new Date(task.reminder).getTime();
       const currentTime = Date.now();
       const delay = jobTime - currentTime;
@@ -163,73 +161,67 @@ export class TaskService {
       return;
     }
 
-    // 🔥 Handle REPEATING Reminders
-    // if (task.repeatType === 'custom' && task.repeatDays) {
-    //   const repeatDaysArray = task.repeatDays.split(','); // Example: "Mo,We,Fr"
+    // 🔥 Handle REPEATING Reminders (daily, weekly, monthly, yearly)
+    const repeatOpts = this.getRepeatOptions(task.repeatType);
 
-    //   for (const day of repeatDaysArray) {
-    //     const nextDate = getNextOccurrence(day);
-    //     if (nextDate) {
-    //       await this.notificationQueue.add(
-    //         'sendReminder',
-    //         {
-    //           userId,
-    //           fcmToken: user.fcmToken,
-    //           title: task.title,
-    //         },
-    //         {
-    //           delay: nextDate.getTime() - Date.now(),
-    //           repeat: { every: 7 * 24 * 60 * 60 * 1000 }, // Repeat weekly
-    //           attempts: 3,
-    //         },
-    //       );
-    //       console.log(`✅ Custom repeat scheduled for "${task.title}" on ${nextDate}`);
-    //     }
-    //   }
-    // } else {
-    //   // ✅ Handle standard repeat types (daily, weekly, monthly, yearly)
-    //   const repeatOpts = this.getRepeatOptions(task);
-    //   await this.notificationQueue.add(
-    //     'sendReminder',
-    //     {
-    //       userId,
-    //       fcmToken: user.fcmToken,
-    //       title: task.title,
-    //     },
-    //     {
-    //       delay: new Date(task.reminder).getTime() - Date.now(),
-    //       repeat: repeatOpts,
-    //       attempts: 3,
-    //     },
-    //   );
+    if (repeatOpts) {
+      await this.notificationQueue.add(
+        'sendReminder',
+        {
+          userId,
+          fcmToken: user.fcmToken,
+          title: task.title,
+        },
+        {
+          repeat: repeatOpts, // 🔥 Schedules repeating jobs
+          jobId: `repeat-${task.id}`, // 🔥 Ensures unique job per task
+          removeOnComplete: true, // 🔥 Keeps queue clean
+        },
+      );
 
-    //   console.log(`✅ Recurring reminder scheduled for "${task.title}" with repeat type: ${task.repeatType}`);
-    // }
+      console.log(
+        `✅ Recurring reminder scheduled for "${task.title}" with repeat type: ${task.repeatType}`,
+      );
+    }
+    const repeatJobs = await this.notificationQueue.getRepeatableJobs();
+    console.log('🔄 Repeat Jobs:', repeatJobs);
+    const jobKey = repeatJobs.find(j => j.name === 'sendReminder')?.key;
+    console.log(`🔑 Job Key for "${task.title}":`, jobKey);
   }
 
   /**
    * Get Repeat Options for BullMQ based on RepeatType
    */
-  private getRepeatOptions(task: any): any {
-    switch (task.repeatType) {
+  // private getRepeatOptions(repeatType: string): any {
+  //   switch (repeatType) {
+  //     case 'daily':
+  //       return { every: 24 * 60 * 60 * 1000 }; // Every 24 hours
+  //     case 'weekly':
+  //       return { every: 7 * 24 * 60 * 60 * 1000 }; // Every 7 days
+  //     case 'monthly':
+  //       return { every: 30 * 24 * 60 * 60 * 1000 }; // Every 30 days
+  //     case 'yearly':
+  //       return { every: 365 * 24 * 60 * 60 * 1000 }; // Every 365 days
+  //     default:
+  //       return {}; // No repeat
+  //   }
+  // }
+
+  private getRepeatOptions(repeatType: string): any {
+    switch (repeatType) {
       case 'daily':
-        return { every: 24 * 60 * 60 * 1000 }; // Every 24 hours
+        return { every: 86_400_000 }; // ✅ Fix: 24 hours in ms
       case 'weekly':
-        return { every: 7 * 24 * 60 * 60 * 1000 }; // Every 7 days
+        return { every: 604_800_000 }; // ✅ 7 days in ms
       case 'monthly':
-        return { every: 30 * 24 * 60 * 60 * 1000 }; // Every 30 days
+        return { every: 30 * 86_400_000 }; // ✅ Approx. 30 days
       case 'yearly':
-        return { every: 365 * 24 * 60 * 60 * 1000 }; // Every 365 days
-      case 'custom':
-        if (task.repeatDays) {
-          return { every: this.getCustomRepeatInterval(task.repeatDays) };
-        }
-        return {};
+        return { every: 365 * 86_400_000 }; // ✅ 1 year
       default:
-        return {}; // No repeat
+        return {};
     }
   }
-
+  
   /**
    * Remove an existing scheduled reminder job
    */
@@ -254,6 +246,121 @@ export class TaskService {
     // 🔥 Simplified: Just returns every 2 days as an example
     return 2 * 24 * 60 * 60 * 1000;
   }
+
+  /**
+   * Schedule a notification for a task reminder (Supports repeat & one-time reminders)
+   */
+  // async scheduleReminder(userId: string, task: any) {
+  //   console.log('scheduleRemider userId:', userId);
+  //   const user = await this.prisma.user.findUnique({
+  //     where: { id: userId },
+  //     select: { fcmToken: true },
+  //   });
+
+  //   if (!user?.fcmToken) {
+  //     console.warn(
+  //       `⚠️ User ${userId} has no FCM token, skipping notification.`,
+  //     );
+  //     return;
+  //   }
+
+  //   // 🔥 Remove existing scheduled job (prevents duplicates)
+  //   // await this.removeScheduledReminder(task.id);
+
+  //   // ✅ If repeatType is "none" or undefined, schedule a one-time reminder
+  // if (!task.repeatType || task.repeatType === 'none') {
+  //   const jobTime = new Date(task.reminder).getTime();
+  //   const currentTime = Date.now();
+  //   const delay = jobTime - currentTime;
+
+  //   if (delay <= 0) {
+  //     console.warn(`⚠️ Reminder time is in the past, skipping.`);
+  //     return;
+  //   }
+
+  //   await this.notificationQueue.add(
+  //     'sendReminder',
+  //     {
+  //       userId,
+  //       fcmToken: user.fcmToken,
+  //       title: task.title,
+  //     },
+  //     { delay, attempts: 3 }
+  //   );
+
+  //   console.log(`✅ One-time reminder scheduled for task "${task.title}" at ${task.reminder}`);
+  //   return;
+  // }
+
+  // // 🔥 Handle REPEATING Reminders (daily, weekly, monthly, yearly)
+  // const repeatOpts = this.getRepeatOptions(task.repeatType);
+
+  // if (repeatOpts) {
+  //   await this.notificationQueue.add(
+  //     'sendReminder',
+  //     {
+  //       userId,
+  //       fcmToken: user.fcmToken,
+  //       title: task.title,
+  //     },
+  //     {
+  //       delay: new Date(task.reminder).getTime() - Date.now(),
+  //       repeat: repeatOpts,
+  //       attempts: 3,
+  //     }
+  //   );
+
+  //     console.log(`✅ Recurring reminder scheduled for "${task.title}" with repeat type: ${task.repeatType}`);
+  //   }
+  // }
+
+  // /**
+  //  * Get Repeat Options for BullMQ based on RepeatType
+  //  */
+  // private getRepeatOptions(task: any): any {
+  //   switch (task.repeatType) {
+  //     case 'daily':
+  //       return { every: 24 * 60 * 60 * 1000 }; // Every 24 hours
+  //     case 'weekly':
+  //       return { every: 7 * 24 * 60 * 60 * 1000 }; // Every 7 days
+  //     case 'monthly':
+  //       return { every: 30 * 24 * 60 * 60 * 1000 }; // Every 30 days
+  //     case 'yearly':
+  //       return { every: 365 * 24 * 60 * 60 * 1000 }; // Every 365 days
+  //     case 'custom':
+  //       if (task.repeatDays) {
+  //         return { every: this.getCustomRepeatInterval(task.repeatDays) };
+  //       }
+  //       return {};
+  //     default:
+  //       return {}; // No repeat
+  //   }
+  // }
+
+  // /**
+  //  * Remove an existing scheduled reminder job
+  //  */
+  // async removeScheduledReminder(taskId: string) {
+  //   const job = await this.notificationQueue.getJob(taskId);
+
+  //   if (job) {
+  //     await job.remove();
+  //     console.log(`🗑️ Removed existing reminder job for Task ID: ${taskId}`);
+  //   } else {
+  //     console.log(`⚠️ No existing job found for Task ID: ${taskId}`);
+  //   }
+  // }
+
+  // /**
+  //  * Helper: Convert Custom Repeat Days to Interval
+  //  */
+  // private getCustomRepeatInterval(repeatDays: string): number {
+  //   const daysArray = repeatDays.split(','); // Example: "Mo,We,Fr"
+  //   console.log(`🔄 Custom repeat days:`, daysArray);
+
+  //   // 🔥 Simplified: Just returns every 2 days as an example
+  //   return 2 * 24 * 60 * 60 * 1000;
+  // }
 
   /**
    * Calculates the next reminder date based on the repeat type

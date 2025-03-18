@@ -25,7 +25,7 @@ export class CreateTaskDto {
   reminder?: Date;
 
   @IsOptional()
-  repeatType?: 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom';
+  repeatType?: 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly';
 }
 
 export class UpdateTaskDto extends CreateTaskDto {}
