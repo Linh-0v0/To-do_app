@@ -23,7 +23,7 @@ export class AuthService {
     @Inject('FIREBASE_AUTH') private firebaseAuth: Auth, // Firebase Authentication
   ) {}
 
-  async signUp(email: string, password: string) {
+  async signUp(firstname: string, lastname: string, email: string, password: string) {
     // ✅ Check if the email exists in the PostgreSQL database
     const existingUser = await this.prisma.user.findUnique({
       where: { email },
@@ -63,7 +63,7 @@ export class AuthService {
     console.log('after hashed password')
     // ✅ Create a new user in PostgreSQL
     const user = await this.prisma.user.create({
-      data: { email, password: hashedPassword },
+      data: { firstname, lastname, email, password: hashedPassword },
     });
     console.log('after create user in postgresql')
 
@@ -128,7 +128,7 @@ export class AuthService {
   }
 
   // ✅ Firebase Auth - Sign Up
-  async firebaseSignUp(email: string, password: string) {
+  async firebaseSignUp(firstname: string, lastname: string, email: string, password: string) {
     try {
       const userCredential = await createUserWithEmailAndPassword(
         this.firebaseAuth,
@@ -154,7 +154,8 @@ export class AuthService {
 
       const newUser = await this.prisma.user.create({
         data: {
-          // id: firebaseUser.uid,
+          firstname,
+          lastname,
           firebaseUid: firebaseUser.uid,
           email: firebaseUser.email,
           createdAt: new Date(),
@@ -193,7 +194,6 @@ export class AuthService {
       if (!user) {
         user = await this.prisma.user.create({
           data: {
-            // id: userCredential.uid,
             email: userCredential.email || email,
             createdAt: new Date(),
           },

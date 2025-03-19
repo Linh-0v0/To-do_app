@@ -19,6 +19,8 @@ model User {
   firebaseUid  String? @unique  // Store Firebase UID (if applicable)
   email     String  @unique
   username  String?
+  firstname  String?
+  lastname  String?
   password  String? //Store hashed password
   createdAt DateTime @default(now())
   refreshToken String?

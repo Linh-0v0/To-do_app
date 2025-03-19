@@ -12,7 +12,6 @@ import { CustomRequest } from '../../common/interfaces/custom-request.interface'
 export class UserService {
   constructor(
     private prisma: PrismaService,
-    @Inject('FIREBASE_ADMIN') private firebaseAdmin: admin.app.App,
   ) {}
 
   async getCurrentUser(request: CustomRequest) {

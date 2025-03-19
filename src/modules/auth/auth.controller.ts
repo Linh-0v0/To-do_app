@@ -18,10 +18,12 @@ export class AuthController {
 
   @Post('signup')
   async signUp(
+    @Body('firstname') firstname: string,
+    @Body('lastname') lastname: string,
     @Body('email') email: string,
     @Body('password') password: string,
   ) {
-    return this.authService.signUp(email, password);
+    return this.authService.signUp(firstname, lastname, email, password);
   }
 
   @Post('signin')
@@ -40,10 +42,12 @@ export class AuthController {
   // ✅ Firebase Authentication - Sign Up
   @Post('firebase-signup')
   async firebaseSignUp(
+    @Body('firstname') firstname: string,
+    @Body('lastname') lastname: string,
     @Body('email') email: string,
     @Body('password') password: string,
   ) {
-    return this.authService.firebaseSignUp(email, password);
+    return this.authService.firebaseSignUp(firstname, lastname, email, password);
   }
 
   // ✅ Firebase Authentication - Sign In
@@ -59,13 +63,6 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async logout(@Request() req) {
     return this.authService.logout(req);
-  }
-
-  // ✅ Get Profile (Protected Route)
-  @Get('profile')
-  @UseGuards(JwtAuthGuard)
-  async getProfile(@Request() req) {
-    return req.user; // ✅ Returns the authenticated user's data
   }
 
   // ✅ Update FCM Token for Firebase Cloud Messaging (Protected)

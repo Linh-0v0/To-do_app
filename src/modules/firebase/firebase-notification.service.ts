@@ -4,8 +4,7 @@ import * as admin from 'firebase-admin';
 @Injectable()
 export class FirebaseNotificationService {
   private readonly logger = new Logger(FirebaseNotificationService.name);
-
-  constructor(@Inject('FIREBASE_ADMIN') private firebaseAdmin: admin.app.App) {}
+  constructor() {}
 
   /**
    * 🔥 Send a push notification via Firebase Cloud Messaging (FCM)
