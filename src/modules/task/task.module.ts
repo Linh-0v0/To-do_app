@@ -5,12 +5,11 @@ import { PrismaModule } from '../../prisma/prisma.module';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from '../auth/jwt.strategy';
 import { FirebaseNotificationModule } from '../firebase/firebase-notification.module';
-import { PrismaService } from 'src/prisma/prisma.service';
 
 
 @Module({
   imports: [PrismaModule, FirebaseNotificationModule, JwtModule.register({ secret: process.env.JWT_SECRET || 'secretKey' })],
-  providers: [TaskService,  JwtStrategy, PrismaService],
+  providers: [TaskService,  JwtStrategy],
   controllers: [TaskController],
 })
 export class TaskModule {}

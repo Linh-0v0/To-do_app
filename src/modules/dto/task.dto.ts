@@ -26,6 +26,10 @@ export class CreateTaskDto {
 
   @IsOptional()
   repeatType?: 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly';
+
+  @IsOptional()
+  @IsString()
+  jobKey?: string;
 }
 
 export class UpdateTaskDto extends CreateTaskDto {}
