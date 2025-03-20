@@ -67,6 +67,8 @@ export class UserService {
       data,
     });
   }
+  
+
   /**
    * ✅ Delete a user from PostgreSQL & Firebase Authentication if applicable
    */

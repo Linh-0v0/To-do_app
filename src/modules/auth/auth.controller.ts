@@ -47,7 +47,12 @@ export class AuthController {
     @Body('email') email: string,
     @Body('password') password: string,
   ) {
-    return this.authService.firebaseSignUp(firstname, lastname, email, password);
+    return this.authService.firebaseSignUp(
+      firstname,
+      lastname,
+      email,
+      password,
+    );
   }
 
   // ✅ Firebase Authentication - Sign In
@@ -57,6 +62,16 @@ export class AuthController {
     @Body('password') password: string,
   ) {
     return this.authService.firebaseSignIn(email, password);
+  }
+
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  async changePassword(
+    @Request() req,
+    @Body('newPassword') newPassword: string,
+    @Body('oldPassword') oldPassword: string,
+  ) {
+    return this.authService.changePassword(req, oldPassword, newPassword);
   }
 
   @Post('logout')

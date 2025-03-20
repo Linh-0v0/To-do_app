@@ -2,6 +2,8 @@ import {
   Injectable,
   ConflictException,
   UnauthorizedException,
+  ForbiddenException,
+  NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
@@ -23,7 +25,12 @@ export class AuthService {
     @Inject('FIREBASE_AUTH') private firebaseAuth: Auth, // Firebase Authentication
   ) {}
 
-  async signUp(firstname: string, lastname: string, email: string, password: string) {
+  async signUp(
+    firstname: string,
+    lastname: string,
+    email: string,
+    password: string,
+  ) {
     // ✅ Check if the email exists in the PostgreSQL database
     const existingUser = await this.prisma.user.findUnique({
       where: { email },
@@ -33,7 +40,7 @@ export class AuthService {
         'Email already registered manually. Please log in manually.',
       );
     }
-    console.log('after existing user')
+    console.log('after existing user');
 
     // ✅ Check if the email is already registered in Firebase
     try {
@@ -50,7 +57,7 @@ export class AuthService {
         );
       }
     }
-    console.log('after try catch')
+    console.log('after try catch');
 
     let hashedPassword = '';
     // ✅ Hash the password for manual authentication
@@ -59,13 +66,13 @@ export class AuthService {
     } catch (error) {
       console.log(error);
     }
-    
-    console.log('after hashed password')
+
+    console.log('after hashed password');
     // ✅ Create a new user in PostgreSQL
     const user = await this.prisma.user.create({
       data: { firstname, lastname, email, password: hashedPassword },
     });
-    console.log('after create user in postgresql')
+    console.log('after create user in postgresql');
 
     return this.generateTokens(user.id, user.email);
   }
@@ -128,7 +135,12 @@ export class AuthService {
   }
 
   // ✅ Firebase Auth - Sign Up
-  async firebaseSignUp(firstname: string, lastname: string, email: string, password: string) {
+  async firebaseSignUp(
+    firstname: string,
+    lastname: string,
+    email: string,
+    password: string,
+  ) {
     try {
       const userCredential = await createUserWithEmailAndPassword(
         this.firebaseAuth,
@@ -205,6 +217,57 @@ export class AuthService {
       throw new UnauthorizedException('Invalid Firebase credentials');
     }
   }
+
+  async changePassword(
+    request: CustomRequest,
+    oldPassword: string,
+    newPassword: string,
+  ) {
+    const user = request.user;
+    const userId =
+      user.provider === 'firebase' ? user.id : user.uid || user.sub;
+
+    const userInfo = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { password: true },
+    });
+
+    if (!userInfo) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.provider == 'firebase') {
+      try {
+        await admin.auth().updateUser(user.sub, {
+          password: newPassword,
+        });
+        console.log(`✅ Password updated in Firebase for user ${user.email}`);
+        return { message: 'Password updated in Firebase' };
+      } catch (error) {
+        console.error(`❌ Error updating password in Firebase:`, error);
+        throw new ForbiddenException('Failed to update password in Firebase');
+      }
+    } else {
+      // 🔹 Check if old password is correct
+      const isMatch = await bcrypt.compare(
+        oldPassword,
+        userInfo.password ?? '',
+      );
+      if (!isMatch) {
+        throw new ForbiddenException('Incorrect old password');
+      }
+
+      // 🔹 Hash new password and update it
+      const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { password: hashedNewPassword },
+      });
+
+      return { message: 'Password changed successfully' };
+    }
+  }
+
   /**
    * Logout user - Firebase Authentication (Invalidate Session)
    */
@@ -213,8 +276,7 @@ export class AuthService {
     console.log('req.user:', request.user);
     try {
       console.log('provider: ', user.provider);
-      const userId =
-        user.provider == 'firebase' ? user.uid || user.sub : ""; // const provider = request.user.provider; // ✅ Determine provider automatically
+      const userId = user.provider == 'firebase' ? user.uid || user.sub : ''; // const provider = request.user.provider; // ✅ Determine provider automatically
       if (!userId) {
         throw new UnauthorizedException('User ID is missing in token');
       }
