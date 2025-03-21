@@ -86,29 +86,30 @@ export class TaskService {
 
     // 🔄 Check if the task is being marked as completed
     const isMarkingCompleted = updatedTask.status == true;
-    // 🔥 If marking completed & it's a repeatable task, remove the scheduled reminder
     if (isMarkingCompleted) {
-      if (!existingTask.repeatType || existingTask.repeatType == 'none') {
+      // one-time reminder
+      if (!updatedTask.repeatType || updatedTask.repeatType == 'none') {
         console.log('RepeatTYpe:', existingTask.repeatType);
         console.log(typeof existingTask.repeatType);
         await this.removeScheduledReminder(existingTask.jobKey || '');
         console.log(
           `✅ Task "${existingTask.title}" is completed. Reminder deleted.`,
         );
+        // repeating reminder
       } else {
         console.log(
           `🔄 Task "${existingTask.title}" is completed but has a repeat type. Keeping reminders.`,
         );
+        // 🔄 If the task reminder or repeat type is changed, reschedule
+        await this.removeScheduledReminder(updatedTask.jobKey || '');
+        await this.scheduleReminder(userId, updatedTask);
       }
     } else {
       console.log(
-        `🔄 Task "${existingTask.title}" is updated but not completed.`,
+        `🔄 Task "${updatedTask.title}" is updated but not completed.`,
       );
-      // 🔄 If the task reminder or repeat type is changed, reschedule
-      if (updateTaskDto.reminder || updateTaskDto.repeatType) {
-        await this.removeScheduledReminder(existingTask.jobKey || '');
-        await this.scheduleReminder(userId, updatedTask);
-      }
+      await this.removeScheduledReminder(updatedTask.jobKey || '');
+      await this.scheduleReminder(userId, updatedTask);
     }
     return updatedTask;
   }
@@ -139,18 +140,45 @@ export class TaskService {
     // 🔥 Remove existing scheduled job (prevents duplicates in case)
     await this.removeScheduledReminder(task.jobKey);
 
-    if (task.status == false) {
-      // ✅ One-time Reminder (No repeat)
-      if (!task.repeatType || task.repeatType === 'none') {
-        const jobTime = new Date(task.reminder).getTime();
-        const currentTime = Date.now();
-        const delay = jobTime - currentTime;
+    // ✅ One-time Reminder (No repeat)
+    if (!task.repeatType || task.repeatType === 'none') {
+      const jobTime = new Date(task.reminder).getTime();
+      const currentTime = Date.now();
+      const delay = jobTime - currentTime;
 
-        if (delay <= 0) {
-          console.warn(`⚠️ Reminder time is in the past, skipping.`);
-          return;
-        }
+      if (delay <= 0) {
+        console.warn(`⚠️ Reminder time is in the past, skipping.`);
+        return;
+      }
 
+      const jobAdd = await this.notificationQueue.add(
+        'sendReminder',
+        {
+          userId,
+          fcmToken: user.fcmToken,
+          title: task.title,
+        },
+        { delay },
+      );
+
+      if (jobAdd) {
+        await this.prisma.task.update({
+          where: { id: task.id },
+          data: {
+            jobKey: jobAdd.repeatJobKey, //2e8b795db9bcf3c46a1d332692908ff8
+          },
+        });
+      }
+
+      console.log(
+        `✅ One-time reminder scheduled for task "${task.title}" at ${task.reminder}`,
+      );
+      return;
+    } else {
+      // // 🔥 Handle REPEATING Reminders (daily, weekly, monthly, yearly)
+      const repeatOpts = this.getRepeatOptions(task.repeatType);
+
+      if (repeatOpts) {
         const jobAdd = await this.notificationQueue.add(
           'sendReminder',
           {
@@ -158,9 +186,14 @@ export class TaskService {
             fcmToken: user.fcmToken,
             title: task.title,
           },
-          { delay },
+          {
+            delay: new Date(task.reminder).getTime() - Date.now(),
+            repeat: repeatOpts, // 🔥 Ensures repeated execution
+            removeOnComplete: true, // 🔥 Keeps queue clean
+          },
         );
-
+        console.log('JOBADD', jobAdd.opts);
+        // 🔥 Save the job key in the DB
         if (jobAdd) {
           await this.prisma.task.update({
             where: { id: task.id },
@@ -169,64 +202,11 @@ export class TaskService {
             },
           });
         }
-
         console.log(
-          `✅ One-time reminder scheduled for task "${task.title}" at ${task.reminder}`,
+          `✅ Recurring reminder scheduled for "${task.title}" with repeat type: ${task.repeatType}`,
         );
-        return;
-      } else {
-        // // 🔥 Handle REPEATING Reminders (daily, weekly, monthly, yearly)
-        const repeatOpts = this.getRepeatOptions(task.repeatType);
-
-        if (repeatOpts) {
-          // ✅ Step 1: Send the initial reminder once (immediately or with delay)
-          const delayUntilFirstReminder =
-            new Date(task.reminder).getTime() - Date.now();
-
-          if (delayUntilFirstReminder > 0) {
-            await this.notificationQueue.add(
-              'sendReminder',
-              {
-                userId,
-                fcmToken: user.fcmToken,
-                title: task.title,
-              },
-              {
-                delay: delayUntilFirstReminder,
-                attempts: 3,
-                removeOnComplete: true,
-              },
-            )
-          };
-          // ✅ Step 2: Schedule future repeats
-          const jobAdd = await this.notificationQueue.add(
-            'sendReminder',
-            {
-              userId,
-              fcmToken: user.fcmToken,
-              title: task.title,
-            },
-            {
-              repeat: repeatOpts, // 🔥 Ensures repeated execution
-              removeOnComplete: true, // 🔥 Keeps queue clean
-            },
-          );
-          console.log('JOBADD', jobAdd.opts);
-          // 🔥 Save the job key in the DB
-          if (jobAdd) {
-            await this.prisma.task.update({
-              where: { id: task.id },
-              data: {
-                jobKey: jobAdd.repeatJobKey, //2e8b795db9bcf3c46a1d332692908ff8
-              },
-            });
-          }
-          console.log(
-            `✅ Recurring reminder scheduled for "${task.title}" with repeat type: ${task.repeatType}`,
-          );
-        }
-      } // 🔥 Save the job key in the DB
-    }
+      }
+    } // 🔥 Save the job key in the DB
 
     const jobs = await this.notificationQueue.getJobs([
       'waiting',
@@ -250,8 +230,8 @@ export class TaskService {
     switch (repeatType) {
       case 'daily':
         // return { every: 86_400_000 }; // ✅ Fix: 24 hours in ms
-      // return { every: 60_000 }; // ✅ 1 minute
-      return { every: 120_000 }; // ✅ 2 minute
+        // return { every: 60_000 }; // ✅ 1 minute
+        return { every: 120_000 }; // ✅ 2 minute
       case 'weekly':
         return { every: 604_800_000 }; // ✅ 7 days in ms
       case 'monthly':
