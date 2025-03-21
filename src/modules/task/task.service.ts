@@ -85,7 +85,7 @@ export class TaskService {
     });
 
     // 🔄 Check if the task is being marked as completed
-    const isMarkingCompleted = updateTaskDto.status == true;
+    const isMarkingCompleted = updatedTask.status == true;
     // 🔥 If marking completed & it's a repeatable task, remove the scheduled reminder
     if (isMarkingCompleted) {
       if (!existingTask.repeatType || existingTask.repeatType == 'none') {
@@ -249,8 +249,9 @@ export class TaskService {
   private getRepeatOptions(repeatType: string): any {
     switch (repeatType) {
       case 'daily':
-        return { every: 86_400_000 }; // ✅ Fix: 24 hours in ms
+        // return { every: 86_400_000 }; // ✅ Fix: 24 hours in ms
       // return { every: 60_000 }; // ✅ 1 minute
+      return { every: 120_000 }; // ✅ 2 minute
       case 'weekly':
         return { every: 604_800_000 }; // ✅ 7 days in ms
       case 'monthly':
