@@ -160,6 +160,7 @@ export class TaskService {
         },
         { delay },
       );
+      console.log('JOBADD', jobAdd);
 
       if (jobAdd) {
         await this.prisma.task.update({

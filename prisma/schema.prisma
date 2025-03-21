@@ -39,7 +39,7 @@ model Task {
   priority  Int     @default(0)
   dueDate   DateTime?
   reminder  DateTime?
-  jobKey    String? //job id for one-time reminder, //job key for repeatable one
+  jobKey    String? //job id can be assigned for one-time reminder, // but can't for for repeatable one, this only has jobkey
   repeatType RepeatType @default(none)
   taggedUsers TaskTaggedUsers[]
 }
