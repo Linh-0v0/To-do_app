@@ -91,9 +91,7 @@ export class TaskService {
       if (!existingTask.repeatType || existingTask.repeatType == 'none') {
         console.log('RepeatTYpe:', existingTask.repeatType);
         console.log(typeof existingTask.repeatType);
-        await this.removeScheduledReminder(
-          existingTask.jobKey || ''
-        );
+        await this.removeScheduledReminder(existingTask.jobKey || '');
         console.log(
           `✅ Task "${existingTask.title}" is completed. Reminder deleted.`,
         );
@@ -122,7 +120,6 @@ export class TaskService {
     const task = await this.getTaskById(user, taskId);
     await this.prisma.task.delete({ where: { id: taskId } });
   }
-
 
   async scheduleReminder(userId: string, task: any) {
     console.log('📅 scheduleReminder for user:', userId);
@@ -161,7 +158,7 @@ export class TaskService {
             fcmToken: user.fcmToken,
             title: task.title,
           },
-          {delay},
+          { delay },
         );
 
         if (jobAdd) {
@@ -182,6 +179,25 @@ export class TaskService {
         const repeatOpts = this.getRepeatOptions(task.repeatType);
 
         if (repeatOpts) {
+          // ✅ Step 1: Send the initial reminder once (immediately or with delay)
+          const delayUntilFirstReminder =
+            new Date(task.reminder).getTime() - Date.now();
+
+          if (delayUntilFirstReminder > 0) {
+            await this.notificationQueue.add(
+              'sendReminder',
+              {
+                userId,
+                fcmToken: user.fcmToken,
+                title: task.title,
+              },
+              {
+                delay: delayUntilFirstReminder,
+                attempts: 3,
+                removeOnComplete: true,
+              },
+            )
+          };
           // ✅ Step 2: Schedule future repeats
           const jobAdd = await this.notificationQueue.add(
             'sendReminder',
@@ -191,7 +207,6 @@ export class TaskService {
               title: task.title,
             },
             {
-
               repeat: repeatOpts, // 🔥 Ensures repeated execution
               removeOnComplete: true, // 🔥 Keeps queue clean
             },
@@ -234,8 +249,8 @@ export class TaskService {
   private getRepeatOptions(repeatType: string): any {
     switch (repeatType) {
       case 'daily':
-        // return { every: 86_400_000 }; // ✅ Fix: 24 hours in ms
-        return { every: 60_000 }; // ✅ 1 minute
+        return { every: 86_400_000 }; // ✅ Fix: 24 hours in ms
+      // return { every: 60_000 }; // ✅ 1 minute
       case 'weekly':
         return { every: 604_800_000 }; // ✅ 7 days in ms
       case 'monthly':
