@@ -16,6 +16,7 @@ import {
 } from 'firebase/auth';
 import * as admin from 'firebase-admin';
 import { CustomRequest } from '../../common/interfaces/custom-request.interface';
+import { getUserId } from 'src/common/utils/get-user-id';
 
 @Injectable()
 export class AuthService {
@@ -224,8 +225,7 @@ export class AuthService {
     newPassword: string,
   ) {
     const user = request.user;
-    const userId =
-      user.provider === 'firebase' ? user.id : user.uid || user.sub;
+    const userId = getUserId(request.user);
 
     const userInfo = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -276,7 +276,7 @@ export class AuthService {
     console.log('req.user:', request.user);
     try {
       console.log('provider: ', user.provider);
-      const userId = user.provider == 'firebase' ? user.uid || user.sub : ''; // const provider = request.user.provider; // ✅ Determine provider automatically
+      const userId = getUserId(request.user); // const provider = request.user.provider; // ✅ Determine provider automatically
       if (!userId) {
         throw new UnauthorizedException('User ID is missing in token');
       }

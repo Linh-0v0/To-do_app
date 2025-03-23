@@ -7,6 +7,8 @@ import {
 import * as admin from 'firebase-admin';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CustomRequest } from '../../common/interfaces/custom-request.interface';
+import { UpdateUserDto } from '../dto/user.dto';
+import { getUserId } from 'src/common/utils/get-user-id';
 
 @Injectable()
 export class UserService {
@@ -15,10 +17,7 @@ export class UserService {
   ) {}
 
   async getCurrentUser(request: CustomRequest) {
-    const user = request.user;
-    console.log(request.user);
-    console.log('createTask user:', user);
-    const userId = user.provider == 'firebase' ? user.id : user.uid || user.sub;
+    const userId = getUserId(request.user);
 
     if (!userId) {
       throw new NotFoundException('User ID not found in request');
@@ -41,42 +40,33 @@ export class UserService {
    */
   async updateUser(
     request: CustomRequest,
-    data: Partial<{ username: string; fcmToken: string; password?: string }>,
+    data: UpdateUserDto,
   ) {
-    const user = request.user;
-    console.log('createTask user:', user);
-    const userId = user.provider == 'firebase' ? user.id : user.uid || user.sub;
-
+    const userId = getUserId(request.user);
+  
     const userInfo = await this.prisma.user.findUnique({
       where: { id: userId },
     });
-
+  
     if (!userInfo) {
       throw new NotFoundException('User not found');
     }
 
-    // 🔹 Prevent Firebase users from updating their password manually
-    if (userInfo.firebaseUid && data.password) {
-      throw new ForbiddenException(
-        'Cannot update password for Firebase-authenticated users.',
-      );
+    if ('password' in data) {
+      throw new ForbiddenException('Password updates are not allowed here.');
     }
-
+    
     return await this.prisma.user.update({
       where: { id: userId },
       data,
     });
   }
-  
 
   /**
    * ✅ Delete a user from PostgreSQL & Firebase Authentication if applicable
    */
   async deleteUser(request: CustomRequest): Promise<void> {
-    const user = request.user;
-    console.log('deleteUser user:', user);
-  
-    const userId = user.provider === 'firebase' ? user.id : user.uid || user.sub;
+    const userId = getUserId(request.user);
   
     const userInfo = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -88,7 +78,7 @@ export class UserService {
   
     // 🔹 If user was created with Firebase, also delete from Firebase Authentication
     if (userInfo.firebaseUid) {
-      await admin.auth().deleteUser(user.uid || user.sub); // Delete from Firebase Auth
+      await admin.auth().deleteUser(request.user.uid || request.user.sub); // Delete from Firebase Auth
     }
   
     // 🔹 Delete user from PostgreSQL
