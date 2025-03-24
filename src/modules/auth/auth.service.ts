@@ -41,7 +41,6 @@ export class AuthService {
         'Email already registered manually. Please log in manually.',
       );
     }
-    console.log('after existing user');
 
     // ✅ Check if the email is already registered in Firebase
     try {
@@ -58,22 +57,14 @@ export class AuthService {
         );
       }
     }
-    console.log('after try catch');
 
-    let hashedPassword = '';
     // ✅ Hash the password for manual authentication
-    try {
-      hashedPassword = await bcrypt.hash(password, 10);
-    } catch (error) {
-      console.log(error);
-    }
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    console.log('after hashed password');
     // ✅ Create a new user in PostgreSQL
     const user = await this.prisma.user.create({
       data: { firstname, lastname, email, password: hashedPassword },
     });
-    console.log('after create user in postgresql');
 
     return this.generateTokens(user.id, user.email);
   }
@@ -241,7 +232,6 @@ export class AuthService {
         await admin.auth().updateUser(user.sub, {
           password: newPassword,
         });
-        console.log(`✅ Password updated in Firebase for user ${user.email}`);
         return { message: 'Password updated in Firebase' };
       } catch (error) {
         console.error(`❌ Error updating password in Firebase:`, error);
@@ -272,22 +262,19 @@ export class AuthService {
    * Logout user - Firebase Authentication (Invalidate Session)
    */
   async logout(request: CustomRequest) {
-    const user = request.user;
-    console.log('req.user:', request.user);
     try {
-      console.log('provider: ', user.provider);
-      const userId = getUserId(request.user); // const provider = request.user.provider; // ✅ Determine provider automatically
+      const userId = getUserId(request.user); 
       if (!userId) {
         throw new UnauthorizedException('User ID is missing in token');
       }
       // Check if the user exists in DB
       const userExists = await this.prisma.user.findUnique({
-        where: { firebaseUid: user.uid || user.sub },
+        where: { firebaseUid: request.user.uid || request.user.sub },
       });
       if (!userExists) {
         throw new UnauthorizedException('User not found in database');
       }
-      if (user.provider == 'firebase') {
+      if (request.user.provider == 'firebase') {
         // 🔹 Remove FCM token (optional)
         await this.prisma.user.update({
           where: { firebaseUid: userId },
@@ -306,7 +293,6 @@ export class AuthService {
 
       return { message: 'User logged out successfully' };
     } catch (error) {
-      console.error('❌ Error during logout:', error);
       throw new UnauthorizedException(error?.message || 'Failed to log out');
     }
   }

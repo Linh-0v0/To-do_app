@@ -9,6 +9,7 @@ import { CreateTaskDto, UpdateTaskDto } from '../dto/task.dto';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { CustomRequest } from 'src/common/interfaces/custom-request.interface';
+import { getUserId } from 'src/common/utils/get-user-id';
 
 @Injectable()
 export class TaskService {
@@ -22,9 +23,7 @@ export class TaskService {
    * Create a new task
    */
   async createTask(request: CustomRequest, createTaskDto: CreateTaskDto) {
-    const user = request.user;
-    console.log('createTask user:', user);
-    const userId = user.provider == 'firebase' ? user.id : user.uid || user.sub;
+    const userId = getUserId(request.user);
     const task = await this.prisma.task.create({
       data: {
         userId,
@@ -41,7 +40,7 @@ export class TaskService {
    * Get all tasks for the authenticated user
    */
   async getUserTasks(user: CustomRequest['user']) {
-    const userId = user.provider == 'firebase' ? user.id : user.uid || user.sub;
+    const userId = getUserId(user);
     const task = this.prisma.task.findMany({
       where: { userId },
     });
@@ -52,7 +51,7 @@ export class TaskService {
    * Get a single task (only if owned by user)
    */
   async getTaskById(user: CustomRequest['user'], taskId: string) {
-    const userId = user.provider == 'firebase' ? user.id : user.uid || user.sub;
+    const userId = getUserId(user);
     const task = await this.prisma.task.findUnique({ where: { id: taskId } });
 
     if (!task) throw new NotFoundException('Task not found');
@@ -69,7 +68,7 @@ export class TaskService {
     taskId: string,
     updateTaskDto: UpdateTaskDto,
   ) {
-    const userId = user.provider == 'firebase' ? user.id : user.uid || user.sub;
+    const userId = getUserId(user);
     const existingTask = await this.prisma.task.findUnique({
       where: { id: taskId, userId },
     });
@@ -89,8 +88,6 @@ export class TaskService {
     if (isMarkingCompleted) {
       // one-time reminder
       if (!updatedTask.repeatType || updatedTask.repeatType == 'none') {
-        console.log('RepeatTYpe:', existingTask.repeatType);
-        console.log(typeof existingTask.repeatType);
         await this.removeScheduledReminder(existingTask.jobKey || '');
         console.log(
           `✅ Task "${existingTask.title}" is completed. Reminder deleted.`,
@@ -123,20 +120,16 @@ export class TaskService {
   }
 
   async scheduleReminder(userId: string, task: any) {
-    console.log('📅 scheduleReminder for user:', userId);
-
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { fcmToken: true },
     });
-
     if (!user?.fcmToken) {
       console.warn(
         `⚠️ User ${userId} has no FCM token, skipping notification.`,
       );
       return;
     }
-    console.log('taskid:', task.id);
     // 🔥 Remove existing scheduled job (prevents duplicates in case)
     await this.removeScheduledReminder(task.jobKey);
 
@@ -145,12 +138,10 @@ export class TaskService {
       const jobTime = new Date(task.reminder).getTime();
       const currentTime = Date.now();
       const delay = jobTime - currentTime;
-
       if (delay <= 0) {
         console.warn(`⚠️ Reminder time is in the past, skipping.`);
         return;
       }
-
       const jobAdd = await this.notificationQueue.add(
         'sendReminder',
         {
@@ -160,7 +151,6 @@ export class TaskService {
         },
         { delay },
       );
-      console.log('JOBADD', jobAdd);
 
       if (jobAdd) {
         await this.prisma.task.update({
@@ -170,10 +160,6 @@ export class TaskService {
           },
         });
       }
-
-      console.log(
-        `✅ One-time reminder scheduled for task "${task.title}" at ${task.reminder}`,
-      );
       return;
     } else {
       // // 🔥 Handle REPEATING Reminders (daily, weekly, monthly, yearly)
@@ -193,7 +179,7 @@ export class TaskService {
             removeOnComplete: true, // 🔥 Keeps queue clean
           },
         );
-        console.log('JOBADD', jobAdd.opts);
+        
         // 🔥 Save the job key in the DB
         if (jobAdd) {
           await this.prisma.task.update({
@@ -203,9 +189,6 @@ export class TaskService {
             },
           });
         }
-        console.log(
-          `✅ Recurring reminder scheduled for "${task.title}" with repeat type: ${task.repeatType}`,
-        );
       }
     } // 🔥 Save the job key in the DB
 
@@ -215,13 +198,6 @@ export class TaskService {
       'active',
       'completed',
     ]);
-
-    jobs.forEach((job) => {
-      console.log(
-        `Job Name: ${job.name}, Job ID: ${job.id}, Job Key: ${job.key}, Data:`,
-        job.data,
-      );
-    });
   }
 
   /**

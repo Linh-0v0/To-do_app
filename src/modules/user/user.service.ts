@@ -85,7 +85,7 @@ export class UserService {
     await this.prisma.user.delete({
       where: { id: userId },
     });
-  
+
     // ✅ No return statement → Automatically responds with 204 No Content
   }
   
