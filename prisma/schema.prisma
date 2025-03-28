@@ -22,11 +22,14 @@ model User {
   firstname  String?
   lastname  String?
   password  String? //Store hashed password
-  createdAt DateTime @default(now())
   refreshToken String?
   fcmToken  String?  // Store the user's FCM token
   tasks     Task[]  // One user can own many tasks
   taggedTasks TaskTaggedUsers[] // Fix: Define the opposite relation
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  deletedAt   DateTime?  // Nullable for soft deletes
 }
 
 model Task {
@@ -42,6 +45,10 @@ model Task {
   jobKey    String? //job id can be assigned for one-time reminder, // but can't for for repeatable one, this only has jobkey
   repeatType RepeatType @default(none)
   taggedUsers TaskTaggedUsers[]
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  deletedAt   DateTime?  // Nullable for soft deletes
 }
 
 model TaskTaggedUsers {

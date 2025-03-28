@@ -33,8 +33,6 @@ services:
       - redis
     env_file:
       - .env
-    volumes:
-      - .:/app  # ✅ Bind mount your local folder
 
 volumes:
   pgdata:

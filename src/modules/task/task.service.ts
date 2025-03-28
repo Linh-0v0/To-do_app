@@ -111,10 +111,28 @@ export class TaskService {
     return updatedTask;
   }
 
+  async softDeleteTask(user: CustomRequest['user'], taskId: string) {
+    const userId = getUserId(user);
+
+    // const task = await this.prisma.task.findUnique({ where: { id: taskId } });
+    console.log('taskid', taskId);
+    const task = await this.getTaskById(user, taskId);
+
+    if (!task || task.deletedAt) {
+      throw new NotFoundException('Task not found or already deleted');
+    }
+
+    await this.prisma.task.update({
+      where: { id: taskId },
+      data: { deletedAt: new Date() },
+    });
+  }
+
   /**
    * Delete a task (only if owned by user)
    */
   async deleteTask(user: CustomRequest['user'], taskId: string) {
+    const userId = getUserId(user);
     const task = await this.getTaskById(user, taskId);
     await this.prisma.task.delete({ where: { id: taskId } });
   }
@@ -179,7 +197,7 @@ export class TaskService {
             removeOnComplete: true, // 🔥 Keeps queue clean
           },
         );
-        
+
         // 🔥 Save the job key in the DB
         if (jobAdd) {
           await this.prisma.task.update({
