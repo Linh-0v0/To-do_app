@@ -14,6 +14,12 @@ RUN npm install
 # Copy the rest of the application
 COPY . .
 
+# Generate Prisma client
+RUN npx prisma generate
+
+# Apply migrations - only if you're using migrations at runtime
+RUN npx prisma migrate deploy
+
 # Expose the port NestJS runs on
 EXPOSE 3000
 

@@ -40,28 +40,33 @@ export class AuthController {
   }
 
   // ✅ Firebase Authentication - Sign Up
-  @Post('firebase-signup')
-  async firebaseSignUp(
-    @Body('firstname') firstname: string,
-    @Body('lastname') lastname: string,
-    @Body('email') email: string,
-    @Body('password') password: string,
-  ) {
-    return this.authService.firebaseSignUp(
-      firstname,
-      lastname,
-      email,
-      password,
-    );
-  }
+  // @Post('firebase-signup')
+  // async firebaseSignUp(
+  //   @Body('firstname') firstname: string,
+  //   @Body('lastname') lastname: string,
+  //   @Body('email') email: string,
+  //   @Body('password') password: string,
+  // ) {
+  //   return this.authService.firebaseSignUp(
+  //     firstname,
+  //     lastname,
+  //     email,
+  //     password,
+  //   );
+  // }
 
   // ✅ Firebase Authentication - Sign In
-  @Post('firebase-signin')
-  async firebaseSignIn(
-    @Body('email') email: string,
-    @Body('password') password: string,
-  ) {
-    return this.authService.firebaseSignIn(email, password);
+  // @Post('firebase-signin')
+  // async firebaseSignIn(
+  //   @Body('email') email: string,
+  //   @Body('password') password: string,
+  // ) {
+  //   return this.authService.firebaseSignIn(email, password);
+  // }
+
+  @Post('google-login')
+  async googleLogin(@Body('idToken') idToken: string) {
+    return this.authService.firebaseGoogleAuth(idToken);
   }
 
   @Post('change-password')

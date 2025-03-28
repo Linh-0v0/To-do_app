@@ -36,7 +36,7 @@ export class UserService {
   }
 
   /**
-   * ✅ Update a user (username, FCM token, password for manual users)
+   * ✅ Update a user 
    */
   async updateUser(
     request: CustomRequest,
