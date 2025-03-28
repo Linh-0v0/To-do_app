@@ -13,7 +13,6 @@ import { getUserId } from 'src/common/utils/get-user-id';
 
 @Injectable()
 export class TaskService {
-  private readonly logger = new Logger(TaskService.name);
   constructor(
     private readonly prisma: PrismaService,
     @InjectQueue('notificationQueue') private notificationQueue: Queue,

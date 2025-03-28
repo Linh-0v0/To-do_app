@@ -13,7 +13,6 @@ import {
 import { TaskService } from './task.service';
 import { CreateTaskDto, UpdateTaskDto } from '../dto/task.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { Request } from 'express';
 import { CustomRequest } from '../../common/interfaces/custom-request.interface';
 
 @Controller('tasks')
