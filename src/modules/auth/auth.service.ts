@@ -126,90 +126,9 @@ export class AuthService {
     }
   }
 
-  // ✅ Firebase Auth - Sign Up
-  // async firebaseSignUp(
-  //   firstname: string,
-  //   lastname: string,
-  //   email: string,
-  //   password: string,
-  // ) {
-  //   try {
-  //     const userCredential = await createUserWithEmailAndPassword(
-  //       this.firebaseAuth,
-  //       email,
-  //       password,
-  //     );
-  //     const firebaseUser = userCredential.user;
-
-  //     if (!firebaseUser.email) {
-  //       throw new UnauthorizedException(
-  //         'Email is required but not provided by Firebase.',
-  //       );
-  //     }
-
-  //     // Check if the email is already registered in our DB
-  //     const existingUser = await this.prisma.user.findUnique({
-  //       where: { email: firebaseUser.email },
-  //     });
-
-  //     if (existingUser) {
-  //       throw new ConflictException('Email already registered.');
-  //     }
-
-  //     const newUser = await this.prisma.user.create({
-  //       data: {
-  //         firstname,
-  //         lastname,
-  //         firebaseUid: firebaseUser.uid,
-  //         email: firebaseUser.email,
-  //         createdAt: new Date(),
-  //       },
-  //     });
-
-  //     return {
-  //       message: 'User registered successfully with Firebase',
-  //       user: firebaseUser,
-  //       userdb: newUser,
-  //     };
-  //   } catch (error) {
-  //     throw new UnauthorizedException(error.message);
-  //   }
-  // }
-
-  // ✅ Firebase Auth - Sign In
-  // async firebaseSignIn(email: string, password: string) {
-  //   try {
-  //     // ✅ Firebase Authentication
-  //     const userCredential = await admin.auth().getUserByEmail(email);
-  //     if (!userCredential) {
-  //       throw new UnauthorizedException('User not found');
-  //     }
-
-  //     // ✅ Check if user exists in PostgreSQL, if not, create a new entry
-  //     let user = await this.prisma.user.findUnique({
-  //       where: { firebaseUid: userCredential.uid },
-  //     });
-
-  //     const userCredentialInfo = await signInWithEmailAndPassword(
-  //       this.firebaseAuth,
-  //       email,
-  //       password,
-  //     );
-  //     if (!user) {
-  //       user = await this.prisma.user.create({
-  //         data: {
-  //           email: userCredential.email || email,
-  //           createdAt: new Date(),
-  //         },
-  //       });
-  //     }
-
-  //     return { message: 'User signed in with Firebase', userCredentialInfo };
-  //   } catch (error) {
-  //     throw new UnauthorizedException('Invalid Firebase credentials');
-  //   }
-  // }
-
+  /**
+   * Firebase Google Authentication
+   */
   async firebaseGoogleAuth(idToken: string) {
     try {
       // 🔐 Verify ID token from frontend
