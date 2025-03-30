@@ -17,11 +17,15 @@ COPY . .
 # Generate Prisma client
 RUN npx prisma generate
 
-# Apply migrations - only if you're using migrations at runtime
-RUN npx prisma migrate deploy
+# Run the application
+# CMD ["npm", "run", "start"]
+
 
 # Expose the port NestJS runs on
 EXPOSE 3000
 
-# Run the application
-CMD ["npm", "run", "start"]
+
+
+# Let the startup script handle migrations
+CMD ["sh", "./entrypoint.sh"]
+

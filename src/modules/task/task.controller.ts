@@ -18,7 +18,7 @@ import { CustomRequest } from '../../common/interfaces/custom-request.interface'
 @Controller('tasks')
 @UseGuards(JwtAuthGuard) // ✅ JwtAuthGuard automatically sets req.user
 export class TaskController {
-  constructor(private readonly taskService: TaskService) {}
+  constructor(private readonly taskService: TaskService) { }
 
   @Post()
   async createTask(

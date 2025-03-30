@@ -4,10 +4,8 @@ services:
   db:
     image: postgres:15
     restart: always
-    environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: todo_db
+    env_file:
+      - .env.dev
     ports:
       - '5430:5432'
     volumes:
@@ -32,7 +30,7 @@ services:
       - db
       - redis
     env_file:
-      - .env
+      - .env.dev
 
 volumes:
   pgdata:

@@ -4,10 +4,8 @@ services:
   db:
     image: postgres:latest
     restart: always
-    environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: todo_db
+    env_file:
+      - .env
     ports:
       - '5430:5432'
     volumes:

@@ -14,7 +14,7 @@ import { getUserId } from 'src/common/utils/get-user-id';
 export class UserService {
   constructor(
     private prisma: PrismaService,
-  ) {}
+  ) { }
 
   async getCurrentUser(request: CustomRequest) {
     const userId = getUserId(request.user);
@@ -25,7 +25,15 @@ export class UserService {
 
     const userInfo = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, email: true, username: true, createdAt: true },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        firstname: true,
+        lastname: true,
+        createdAt: true,
+        fcmToken: true
+      },
     });
 
     if (!userInfo) {
@@ -43,11 +51,11 @@ export class UserService {
     data: UpdateUserDto,
   ) {
     const userId = getUserId(request.user);
-  
+
     const userInfo = await this.prisma.user.findUnique({
       where: { id: userId },
     });
-  
+
     if (!userInfo) {
       throw new NotFoundException('User not found');
     }
@@ -55,7 +63,7 @@ export class UserService {
     if ('password' in data) {
       throw new ForbiddenException('Password updates are not allowed here.');
     }
-    
+
     return await this.prisma.user.update({
       where: { id: userId },
       data,
@@ -67,20 +75,20 @@ export class UserService {
    */
   async deleteUser(request: CustomRequest): Promise<void> {
     const userId = getUserId(request.user);
-  
+
     const userInfo = await this.prisma.user.findUnique({
       where: { id: userId },
     });
-  
+
     if (!userInfo) {
       throw new NotFoundException('User not found');
     }
-  
+
     // 🔹 If user was created with Firebase, also delete from Firebase Authentication
     if (userInfo.firebaseUid) {
       await admin.auth().deleteUser(request.user.uid || request.user.sub); // Delete from Firebase Auth
     }
-  
+
     // 🔹 Delete user from PostgreSQL
     await this.prisma.user.delete({
       where: { id: userId },
@@ -88,5 +96,5 @@ export class UserService {
 
     // ✅ No return statement → Automatically responds with 204 No Content
   }
-  
+
 }
