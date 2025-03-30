@@ -24,13 +24,14 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     @Inject('FIREBASE_AUTH') private firebaseAuth: Auth, // Firebase Authentication
-  ) {}
+  ) { }
 
   async signUp(
     firstname: string,
     lastname: string,
     email: string,
     password: string,
+    username?: string,
   ) {
     // ✅ Check if the email exists in the PostgreSQL database
     const existingUser = await this.prisma.user.findUnique({
@@ -63,7 +64,13 @@ export class AuthService {
 
     // ✅ Create a new user in PostgreSQL
     const user = await this.prisma.user.create({
-      data: { firstname, lastname, email, password: hashedPassword },
+      data: {
+        firstname,
+        lastname,
+        email,
+        username,
+        password: hashedPassword
+      },
     });
 
     return this.generateTokens(user.id, user.email);

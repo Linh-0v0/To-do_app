@@ -14,7 +14,7 @@ import { CustomRequest } from '../../common/interfaces/custom-request.interface'
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
   @Post('signup')
   async signUp(
@@ -22,8 +22,9 @@ export class AuthController {
     @Body('lastname') lastname: string,
     @Body('email') email: string,
     @Body('password') password: string,
+    @Body('username') username?: string,
   ) {
-    return this.authService.signUp(firstname, lastname, email, password);
+    return this.authService.signUp(firstname, lastname, email, password, username);
   }
 
   @Post('signin')
