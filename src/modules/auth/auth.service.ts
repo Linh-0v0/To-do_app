@@ -24,7 +24,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     @Inject('FIREBASE_AUTH') private firebaseAuth: Auth, // Firebase Authentication
-  ) { }
+  ) {}
 
   async signUp(
     firstname: string,
@@ -69,7 +69,7 @@ export class AuthService {
         lastname,
         email,
         username,
-        password: hashedPassword
+        password: hashedPassword,
       },
     });
 
@@ -172,6 +172,13 @@ export class AuthService {
         { expiresIn: '7d' },
       );
 
+      // Save hashed refresh token in the database
+      const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { refreshToken: hashedRefreshToken },
+      });
+
       return {
         message: 'User authenticated with Google',
         accessToken,
@@ -242,26 +249,42 @@ export class AuthService {
       if (!userId) {
         throw new UnauthorizedException('User ID is missing in token');
       }
-      // Check if the user exists in DB
-      const userExists = await this.prisma.user.findUnique({
-        where: { firebaseUid: request.user.uid || request.user.sub },
-      });
+
+      // Check if the user exists in DB with the correct identifier
+      let userExists;
+      if (request.user.provider === 'firebase') {
+        // For Firebase/Google auth, we need to check by firebaseUid
+        userExists = await this.prisma.user.findFirst({
+          where: {
+            OR: [{ firebaseUid: userId }, { firebaseUid: request.user.uid }],
+          },
+        });
+      } else {
+        // For manual auth, check by our internal ID
+        userExists = await this.prisma.user.findUnique({
+          where: { id: userId },
+        });
+      }
+
       if (!userExists) {
         throw new UnauthorizedException('User not found in database');
       }
-      if (request.user.provider == 'firebase') {
+
+      if (request.user.provider === 'firebase') {
         // 🔹 Remove FCM token (optional)
         await this.prisma.user.update({
-          where: { firebaseUid: userId },
+          where: { id: userExists.id }, // Always use our internal ID for updates
           data: { fcmToken: null },
         });
 
-        // 🔹 Firebase Admin: Revoke user's refresh tokens
-        await admin.auth().revokeRefreshTokens(userId);
+        // 🔹 Firebase Admin: Revoke user's refresh tokens if we have the firebase UID
+        if (userExists.firebaseUid) {
+          await admin.auth().revokeRefreshTokens(userExists.firebaseUid);
+        }
       } else {
         // 🔹 Manual JWT Logout: Remove refreshToken from DB
         await this.prisma.user.update({
-          where: { id: userId },
+          where: { id: userExists.id },
           data: { refreshToken: null },
         });
       }

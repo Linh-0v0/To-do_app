@@ -133,6 +133,12 @@ export class TaskService {
   async deleteTask(user: CustomRequest['user'], taskId: string) {
     const userId = getUserId(user);
     const task = await this.getTaskById(user, taskId);
+
+    // Remove any scheduled reminders for this task
+    if (task.jobKey) {
+      await this.removeScheduledReminder(task.jobKey);
+    }
+
     await this.prisma.task.delete({ where: { id: taskId } });
   }
 

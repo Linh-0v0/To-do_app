@@ -18,7 +18,7 @@ import { CustomRequest } from '../../common/interfaces/custom-request.interface'
 @Controller('tasks')
 @UseGuards(JwtAuthGuard) // ✅ JwtAuthGuard automatically sets req.user
 export class TaskController {
-  constructor(private readonly taskService: TaskService) { }
+  constructor(private readonly taskService: TaskService) {}
 
   @Post()
   async createTask(
@@ -48,15 +48,6 @@ export class TaskController {
     @Body() updateTaskDto: UpdateTaskDto,
   ) {
     return this.taskService.updateTask(req.user, taskId, updateTaskDto);
-  }
-
-  @Delete(':taskId')
-  async softDeleteTask(
-    @Req() req: CustomRequest,
-    @Param('taskId') taskId: string,
-  ) {
-    await this.taskService.softDeleteTask(req.user, taskId);
-    return { message: 'Task soft-deleted' };
   }
 
   @Delete(':taskId')

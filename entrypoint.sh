@@ -3,14 +3,17 @@
 echo "Running Prisma generate..."
 npx prisma generate
 
-echo "Waiting for the database to be ready..."
+# Wait for DB to be ready (optional but recommended)
+echo "Waiting for database..."
 until npx prisma db pull > /dev/null 2>&1; do
   sleep 1
   echo "Waiting..."
 done
 
-echo "Applying migrations..."
+# Run Prisma migrations
+echo "Running migrations..."
 npx prisma migrate deploy
 
-echo "Starting the app..."
+# Start the app
+echo "Starting NestJS app..."
 npm run start
