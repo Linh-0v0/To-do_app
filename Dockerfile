@@ -14,17 +14,11 @@ RUN npm install
 # Copy the rest of the application
 COPY . .
 
-# Generate Prisma client
-RUN npx prisma generate
-
-# Run the application
-# CMD ["npm", "run", "start"]
-
-
 # Expose the port NestJS runs on
 EXPOSE 3000
 
-
+# Run the application
+# CMD ["npm", "run", "start"]
 
 # Let the startup script handle migrations
 CMD ["sh", "./entrypoint.sh"]
