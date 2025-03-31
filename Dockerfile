@@ -17,9 +17,6 @@ COPY . .
 # Expose the port NestJS runs on
 EXPOSE 3000
 
-# Run the application
-# CMD ["npm", "run", "start"]
-
 # Let the startup script handle migrations
 CMD ["sh", "./entrypoint.sh"]
 
